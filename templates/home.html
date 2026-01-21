@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Accueil - UGANC{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="text-center py-5">
+                <div class="mb-4">
+                    <i class="bi bi-house-fill" style="font-size: 5rem; color: var(--primary-color);"></i>
+                </div>
+                <h1 class="display-4 fw-bold mb-3" style="color: var(--primary-color);">
+                    Bienvenue sur UGANC
+                </h1>
+                <p class="lead text-muted mb-4">
+                    Système de Gestion des Notes - Centre Informatique
+                </p>
+                
+                <div class="alert alert-info d-inline-block">
+                    <i class="bi bi-person-circle me-2"></i>
+                    Connecté en tant que : <strong>{{ user.get_full_name|default:user.username }}</strong>
+                    <br>
+                    <i class="bi bi-shield-check me-2"></i>
+                    Rôle : <strong>{{ user.profile.get_role_display }}</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-4">
+        {% if user.profile.is_admin %}
+            <!-- Dashboard Admin -->
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-people-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-3">Gestion Académique</h5>
+                        <p class="card-text text-muted">Étudiants, Enseignants, Départements</p>
+                        <a href="#" class="btn btn-primary">Accéder</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-book-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-3">Structure Pédagogique</h5>
+                        <p class="card-text text-muted">Matières, Semestres, Programmes</p>
+                        <a href="#" class="btn btn-primary">Accéder</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-file-earmark-text-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-3">Bulletins</h5>
+                        <p class="card-text text-muted">Génération et gestion des bulletins</p>
+                        <a href="#" class="btn btn-primary">Accéder</a>
+                    </div>
+                </div>
+            </div>
+
+        {% elif user.profile.is_enseignant %}
+            <!-- Dashboard Enseignant -->
+            <div class="col-md-6">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-clipboard-check-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-3">Saisie des Notes</h5>
+                        <p class="card-text text-muted">Saisir et valider les notes</p>
+                        <a href="#" class="btn btn-primary">Accéder</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-book-half" style="font-size: 3rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-3">Mes Matières</h5>
+                        <p class="card-text text-muted">Consulter mes enseignements</p>
+                        <a href="#" class="btn btn-primary">Accéder</a>
+                    </div>
+                </div>
+            </div>
+
+        {% else %}
+            <!-- Dashboard Étudiant -->
+            <div class="col-md-6">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-journal-text" style="font-size: 3rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-3">Mes Notes</h5>
+                        <p class="card-text text-muted">Consulter mes résultats</p>
+                        <a href="#" class="btn btn-primary">Accéder</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-download" style="font-size: 3rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-3">Mes Bulletins</h5>
+                        <p class="card-text text-muted">Télécharger mes bulletins</p>
+                        <a href="#" class="btn btn-primary">Accéder</a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <i class="bi bi-info-circle me-2"></i>Informations
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>Année académique :</strong> 2025-2026</p>
+                    <p class="mb-2"><strong>Semestre en cours :</strong> S1 (Semestre 1)</p>
+                    <p class="mb-0"><strong>Statut du système :</strong> <span class="badge bg-success">Opérationnel</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

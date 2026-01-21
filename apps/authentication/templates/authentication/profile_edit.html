@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Modifier mon Profil - UGANC{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h2 fw-bold" style="color: var(--primary-color);">
+                    <i class="bi bi-pencil-square me-2"></i>Modifier mon Profil
+                </h1>
+                <a href="{% url 'authentication:profile' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Retour au profil
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="bi bi-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card">
+                <div class="card-header" style="background-color: var(--primary-color); color: white;">
+                    <i class="bi bi-person-fill-gear me-2"></i>Informations personnelles
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" novalidate>
+                        {% csrf_token %}
+
+                        <!-- Photo de profil -->
+                        <div class="text-center mb-4">
+                            {% if form.instance.photo %}
+                                <img src="{{ form.instance.photo.url }}" alt="Photo actuelle" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;" id="preview-photo">
+                            {% else %}
+                                <div class="avatar mx-auto mb-3" style="width: 120px; height: 120px; font-size: 3rem;" id="preview-avatar">
+                                    {{ user.first_name|first|default:user.username|first|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="row g-3">
+                            <!-- Prénom -->
+                            <div class="col-md-6">
+                                <label for="{{ form.first_name.id_for_label }}" class="form-label">
+                                    <i class="bi bi-person me-2"></i>{{ form.first_name.label }}
+                                </label>
+                                {{ form.first_name }}
+                                {% if form.first_name.errors %}
+                                    <div class="text-danger small mt-1">{{ form.first_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Nom -->
+                            <div class="col-md-6">
+                                <label for="{{ form.last_name.id_for_label }}" class="form-label">
+                                    <i class="bi bi-person me-2"></i>{{ form.last_name.label }}
+                                </label>
+                                {{ form.last_name }}
+                                {% if form.last_name.errors %}
+                                    <div class="text-danger small mt-1">{{ form.last_name.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Email -->
+                            <div class="col-md-6">
+                                <label for="{{ form.email.id_for_label }}" class="form-label">
+                                    <i class="bi bi-envelope me-2"></i>{{ form.email.label }}
+                                </label>
+                                {{ form.email }}
+                                {% if form.email.errors %}
+                                    <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Téléphone -->
+                            <div class="col-md-6">
+                                <label for="{{ form.telephone.id_for_label }}" class="form-label">
+                                    <i class="bi bi-telephone me-2"></i>{{ form.telephone.label }}
+                                </label>
+                                {{ form.telephone }}
+                                {% if form.telephone.errors %}
+                                    <div class="text-danger small mt-1">{{ form.telephone.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Photo -->
+                            <div class="col-md-12">
+                                <label for="{{ form.photo.id_for_label }}" class="form-label">
+                                    <i class="bi bi-camera me-2"></i>{{ form.photo.label }}
+                                </label>
+                                {{ form.photo }}
+                                {% if form.photo.errors %}
+                                    <div class="text-danger small mt-1">{{ form.photo.errors.0 }}</div>
+                                {% endif %}
+                                <small class="text-muted d-block mt-1">Formats acceptés : JPG, PNG, JPEG (max 2MB)</small>
+                            </div>
+
+                            <!-- Adresse -->
+                            <div class="col-md-12">
+                                <label for="{{ form.adresse.id_for_label }}" class="form-label">
+                                    <i class="bi bi-geo-alt me-2"></i>{{ form.adresse.label }}
+                                </label>
+                                {{ form.adresse }}
+                                {% if form.adresse.errors %}
+                                    <div class="text-danger small mt-1">{{ form.adresse.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{% url 'authentication:profile' %}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-2"></i>Annuler
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle me-2"></i>Enregistrer les modifications
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mt-4">
+                <div class="card-header bg-warning text-dark">
+                    <i class="bi bi-shield-lock me-2"></i>Sécurité du compte
+                </div>
+                <div class="card-body">
+                    <p class="mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Pour modifier votre mot de passe, contactez l'administrateur du système.
+                    </p>
+                    <p class="mb-0 small text-muted">
+                        <i class="bi bi-lock-fill me-2"></i>
+                        Votre nom d'utilisateur ne peut pas être modifié pour des raisons de sécurité.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Prévisualisation de la photo
+    document.getElementById('{{ form.photo.id_for_label }}').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('preview-photo');
+                const avatar = document.getElementById('preview-avatar');
+                
+                if (preview) {
+                    preview.src = e.target.result;
+                } else if (avatar) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'rounded-circle mb-3';
+                    img.style.width = '120px';
+                    img.style.height = '120px';
+                    img.style.objectFit = 'cover';
+                    img.id = 'preview-photo';
+                    avatar.replaceWith(img);
+                }
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+</script>
+{% endblock %}
