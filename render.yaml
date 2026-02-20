@@ -1,0 +1,24 @@
+databases:
+  - name: uganc-db
+    databaseName: uganc_db
+    user: uganc_user
+    plan: free
+
+services:
+  - type: web
+    name: uganc-system
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn config.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DATABASE_URL
+        fromDatabase:
+          name: uganc-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: false
