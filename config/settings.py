@@ -6,6 +6,7 @@ Système de Gestion des Notes
 import os
 from pathlib import Path
 from decouple import config
+import dj_database_url
 
 # Build paths
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -13,7 +14,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Security
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-dev-key-change-in-production')
 DEBUG = config('DEBUG', default=True, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1').split(',')
+
+# Allowed Hosts
+ALLOWED_HOSTS = [
+    'localhost',
+    '127.0.0.1',
+    '.onrender.com',  # Pour tous les sous-domaines Render
+]
 
 # Applications
 INSTALLED_APPS = [
@@ -34,6 +41,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # WhiteNoise pour les fichiers statiques
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -63,20 +71,24 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+# PostgreSQL pour production (Render), SQLite3 pour développement local
+if config('DATABASE_URL', default=None):
+    # Production : PostgreSQL sur Render
+    DATABASES = {
+        'default': dj_database_url.config(
+            default=config('DATABASE_URL'),
+            conn_max_age=600,
+            conn_health_checks=True,
+        )
     }
-}
-
-# Pour PostgreSQL (production) - décommenter et configurer .env
-# import dj_database_url
-# DATABASES = {
-#     'default': dj_database_url.config(
-#         default=config('DATABASE_URL')
-#     )
-# }
+else:
+    # Développement local : SQLite3
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -87,20 +99,22 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 # Internationalization
-LANGUAGE_CODE = config('LANGUAGE_CODE', default='fr-fr')
-TIME_ZONE = config('TIME_ZONE', default='Africa/Conakry')
+LANGUAGE_CODE = 'fr-fr'
+TIME_ZONE = 'Africa/Conakry'
 USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# Configuration WhiteNoise pour compression et cache
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -120,8 +134,11 @@ MESSAGE_TAGS = {
     messages.ERROR: 'danger',
 }
 
-ALLOWED_HOSTS = ['*']
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',
-]
+# Security settings pour production
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_BROWSER_XSS_FILTER = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
