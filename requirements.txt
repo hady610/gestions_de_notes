@@ -1,18 +1,10 @@
-# Django et extensions
-Django==5.0.1
-django-environ==0.11.2
-
-# Base de données
-psycopg2-binary==2.9.9
-
-# Images
-Pillow==10.2.0
-
-# PDF
-reportlab==4.0.9
-
-# Utilitaires
+asgiref==3.11.0
+charset-normalizer==3.4.4
+Django==5.2.10
+et_xmlfile==2.0.0
+openpyxl==3.1.5
+pillow==12.1.0
 python-decouple==3.8
-
-# Développement (à commenter en production)
-django-debug-toolbar==4.2.0
+reportlab==4.4.9
+sqlparse==0.5.5
+tzdata==2025.3
