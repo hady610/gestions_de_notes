@@ -2,7 +2,9 @@ asgiref==3.11.0
 charset-normalizer==3.4.4
 Django==5.2.10
 et_xmlfile==2.0.0
+gunicorn==25.1.0
 openpyxl==3.1.5
+packaging==26.0
 pillow==12.1.0
 python-decouple==3.8
 reportlab==4.4.9
