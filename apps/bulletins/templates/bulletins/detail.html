@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bulletin {{ etudiant.get_full_name }} - UGANC{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- En-tête -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h2 fw-bold" style="color:var(--primary-color);">
+                <i class="bi bi-file-earmark-text me-2"></i>Bulletin de {{ etudiant.get_full_name }}
+            </h1>
+            <p class="text-muted mb-0">Prévisualisation avant génération PDF</p>
+        </div>
+        <div>
+            <a href="{% url 'bulletins:liste_bulletins' %}" class="btn btn-outline-secondary me-2">
+                <i class="bi bi-arrow-left me-2"></i>Retour
+            </a>
+            <a href="{% url 'bulletins:generer_bulletin_pdf' etudiant.id %}" class="btn btn-danger">
+                <i class="bi bi-file-earmark-pdf me-2"></i>Télécharger PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- Infos Étudiant -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <i class="bi bi-person-fill me-2"></i>Informations de l'étudiant
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p class="mb-2"><strong>Nom complet :</strong> {{ etudiant.get_full_name }}</p>
+                    <p class="mb-2"><strong>Matricule :</strong> {{ etudiant.matricule }}</p>
+                    <p class="mb-2"><strong>Département :</strong> {{ etudiant.departement.nom }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p class="mb-2"><strong>Niveau :</strong> {{ etudiant.niveau.nom }}</p>
+                    <p class="mb-2"><strong>Année universitaire :</strong> {{ etudiant.annee_academique.annee }}</p>
+                    <p class="mb-2"><strong>Email :</strong> {{ etudiant.email|default:"—" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Semestre 1 -->
+    <div class="card mb-4">
+        <div class="card-header" style="background-color: var(--primary-color); color: white;">
+            <h5 class="mb-0"><i class="bi bi-book me-2"></i>{{ semestre1.nom }}</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Matières</th>
+                            <th class="text-center" width="100">Notes</th>
+                            <th class="text-center" width="150">Note Littérale</th>
+                            <th class="text-center" width="120">Observ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ue in data_s1.ues %}
+                            <!-- Nom UE -->
+                            <tr class="table-secondary">
+                                <td colspan="4"><strong>{{ ue.nom }}</strong></td>
+                            </tr>
+                            
+                            <!-- Matières de l'UE -->
+                            {% for mat in ue.matieres %}
+                            <tr>
+                                <td class="ps-4">{{ mat.nom }}</td>
+                                <td class="text-center">{{ mat.moyenne }}</td>
+                                <td class="text-center">{{ mat.note_litterale }}</td>
+                                <td class="text-center">
+                                    {% if mat.valide %}
+                                        <span class="badge bg-success">Validé</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Non-validé</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            
+                            <!-- Moyenne UE -->
+                            <tr class="fw-bold">
+                                <td>Moyenne UE</td>
+                                <td class="text-center">{{ ue.moyenne }}</td>
+                                <td class="text-center">{{ ue.note_litterale }}</td>
+                                <td class="text-center">
+                                    {% if ue.valide %}
+                                        <span class="badge bg-success">Validé</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Non-validé</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        
+                        <!-- Matières seules -->
+                        {% for mat in data_s1.matieres_seules %}
+                        <tr>
+                            <td><strong>{{ mat.nom }}</strong></td>
+                            <td class="text-center">{{ mat.moyenne }}</td>
+                            <td class="text-center">{{ mat.note_litterale }}</td>
+                            <td class="text-center">
+                                {% if mat.valide %}
+                                    <span class="badge bg-success">Validé</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Non-validé</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Semestre 2 -->
+    <div class="card mb-4">
+        <div class="card-header" style="background-color: var(--primary-color); color: white;">
+            <h5 class="mb-0"><i class="bi bi-book me-2"></i>{{ semestre2.nom }}</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-bordered mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Matières</th>
+                            <th class="text-center" width="100">Notes</th>
+                            <th class="text-center" width="150">Note Littérale</th>
+                            <th class="text-center" width="120">Observ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ue in data_s2.ues %}
+                            <!-- Nom UE -->
+                            <tr class="table-secondary">
+                                <td colspan="4"><strong>{{ ue.nom }}</strong></td>
+                            </tr>
+                            
+                            <!-- Matières de l'UE -->
+                            {% for mat in ue.matieres %}
+                            <tr>
+                                <td class="ps-4">{{ mat.nom }}</td>
+                                <td class="text-center">{{ mat.moyenne }}</td>
+                                <td class="text-center">{{ mat.note_litterale }}</td>
+                                <td class="text-center">
+                                    {% if mat.valide %}
+                                        <span class="badge bg-success">Validé</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Non-validé</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            
+                            <!-- Moyenne UE -->
+                            <tr class="fw-bold">
+                                <td>Moyenne UE</td>
+                                <td class="text-center">{{ ue.moyenne }}</td>
+                                <td class="text-center">{{ ue.note_litterale }}</td>
+                                <td class="text-center">
+                                    {% if ue.valide %}
+                                        <span class="badge bg-success">Validé</span>
+                                    {% else %}
+                                        <span class="badge bg-danger">Non-validé</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        
+                        <!-- Matières seules -->
+                        {% for mat in data_s2.matieres_seules %}
+                        <tr>
+                            <td><strong>{{ mat.nom }}</strong></td>
+                            <td class="text-center">{{ mat.moyenne }}</td>
+                            <td class="text-center">{{ mat.note_litterale }}</td>
+                            <td class="text-center">
+                                {% if mat.valide %}
+                                    <span class="badge bg-success">Validé</span>
+                                {% else %}
+                                    <span class="badge bg-danger">Non-validé</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bouton PDF en bas -->
+    <div class="text-center mb-4">
+        <a href="{% url 'bulletins:generer_bulletin_pdf' etudiant.id %}" class="btn btn-danger btn-lg">
+            <i class="bi bi-file-earmark-pdf me-2"></i>Télécharger le Bulletin PDF
+        </a>
+    </div>
+
+    <!-- Info -->
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle me-2"></i>
+        <strong>Info :</strong> Ce bulletin contient uniquement les notes validées. 
+        Vérifiez les informations avant de télécharger le PDF officiel.
+    </div>
+</div>
+{% endblock %}

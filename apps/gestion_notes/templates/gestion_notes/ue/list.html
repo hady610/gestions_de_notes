@@ -1,0 +1,69 @@
+{% extends 'gestion_notes/base_notes.html' %}
+{% load static %}
+{% block title %}Unités d'Enseignement - UGANC{% endblock %}
+{% block main_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 fw-bold" style="color:var(--primary-color);">Unités d'Enseignement</h1>
+        <p class="text-muted mb-0">Regroupement des matières en UE</p>
+    </div>
+    <a href="{% url 'gestion_notes:ue_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle me-2"></i>Ajouter une UE
+    </a>
+</div>
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <select name="semestre" class="form-select">
+                    <option value="">Tous les semestres</option>
+                    {% for sem in semestres %}
+                        <option value="{{ sem.id }}" {% if sem.id|stringformat:"s" == semestre_selectionne %}selected{% endif %}>{{ sem.code }} - {{ sem.nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Filtrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header"><i class="bi bi-layers me-2"></i>Liste des UE ({{ ues|length }})</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Nom UE</th>
+                        <th>Semestre</th>
+                        <th>Matières</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ue in ues %}
+                    <tr>
+                        <td><strong>{{ ue.code }}</strong></td>
+                        <td>{{ ue.nom }}</td>
+                        <td><span class="badge bg-primary">{{ ue.semestre.code }}</span></td>
+                        <td>
+                            {% for mat in ue.matieres.all %}
+                                <span class="badge bg-secondary me-1">{{ mat.code }}</span>
+                            {% endfor %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'gestion_notes:ue_update' ue.pk %}" class="btn btn-sm btn-outline-warning"><i class="bi bi-pencil"></i></a>
+                            <a href="{% url 'gestion_notes:ue_delete' ue.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center py-4 text-muted">Aucune UE créée</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

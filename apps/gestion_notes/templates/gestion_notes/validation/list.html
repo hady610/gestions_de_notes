@@ -1,0 +1,257 @@
+{% extends 'gestion_notes/base_notes.html' %}
+{% load static %}
+
+{% block title %}Validation des Notes{% endblock %}
+{% block main_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 fw-bold" style="color:var(--primary-color);">
+            <i class="bi bi-shield-check me-2"></i>Validation des Notes
+        </h1>
+        <p class="text-muted mb-0">Département : {{ request.user.profile.departement.nom }}</p>
+    </div>
+</div>
+
+<!-- Indicateur année -->
+<div class="alert {% if est_annee_active %}alert-success{% else %}alert-warning{% endif %} d-flex align-items-center">
+    <i class="bi bi-calendar-event me-3" style="font-size: 2rem;"></i>
+    <div>
+        <strong>Année sélectionnée :</strong> {{ annee_selectionnee.annee }}
+        {% if est_annee_active %}
+            <span class="badge bg-success ms-2">ANNÉE ACTIVE</span>
+            <p class="mb-0 mt-1"><small>Seuls les étudiants actifs sont affichés</small></p>
+        {% else %}
+            <span class="badge bg-warning ms-2">ANNÉE PRÉCÉDENTE</span>
+            <p class="mb-0 mt-1"><small>Tous les étudiants (actifs + archivés) sont affichés</small></p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Filtres étendus -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-funnel me-2"></i>Filtres
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Année Académique</label>
+                <select name="annee" class="form-select" onchange="this.form.submit()">
+                    {% for annee in annees %}
+                    <option value="{{ annee.pk }}" {% if annee.pk == annee_selectionnee.pk %}selected{% endif %}>
+                        {{ annee.annee }} {% if annee.est_active %}★{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">Niveau</label>
+                <select name="niveau" class="form-select">
+                    <option value="">Tous</option>
+                    {% for niveau in niveaux %}
+                    <option value="{{ niveau.pk }}" {% if filters.niveau == niveau.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ niveau.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">Statut</label>
+                <select name="statut" class="form-select">
+                    <option value="">Tous</option>
+                    <option value="soumis" {% if filters.statut == "soumis" %}selected{% endif %}>Soumis</option>
+                    <option value="valide" {% if filters.statut == "valide" %}selected{% endif %}>Validé</option>
+                    <option value="invalide" {% if filters.statut == "invalide" %}selected{% endif %}>Invalidé</option>
+                    <option value="brouillon" {% if filters.statut == "brouillon" %}selected{% endif %}>Brouillon</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label class="form-label">Matricule</label>
+                <input type="text" name="matricule" class="form-control" 
+                       placeholder="XXX-XXX-XXX-XXX" value="{{ filters.matricule }}">
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-2"></i>Filtrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Statistiques -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-people-fill" style="font-size: 2rem; color: var(--primary-color);"></i>
+                <h5 class="mt-2 mb-0">{{ stats.total_etudiants }}</h5>
+                <small class="text-muted">Étudiants</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-clock-history" style="font-size: 2rem; color: #ffc107;"></i>
+                <h5 class="mt-2 mb-0">{{ stats.soumis }}</h5>
+                <small class="text-muted">Soumis</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-check-circle" style="font-size: 2rem; color: #198754;"></i>
+                <h5 class="mt-2 mb-0">{{ stats.valide }}</h5>
+                <small class="text-muted">Validés</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-x-circle" style="font-size: 2rem; color: #dc3545;"></i>
+                <h5 class="mt-2 mb-0">{{ stats.invalide }}</h5>
+                <small class="text-muted">Invalidés</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-file-earmark-text" style="font-size: 2rem; color: #0d6efd;"></i>
+                <h5 class="mt-2 mb-0">{{ stats.total_notes }}</h5>
+                <small class="text-muted">Notes Totales</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Table notes avec sélection multiple -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-clipboard-check me-2"></i>Notes ({{ notes|length }})
+    </div>
+    <div class="card-body p-0">
+        <form method="post" action="{% url 'gestion_notes:validation_notes_valider_lot' %}">
+            {% csrf_token %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th width="40">
+                                <input type="checkbox" id="select-all" class="form-check-input">
+                            </th>
+                            <th>Étudiant</th>
+                            <th>Matière</th>
+                            <th>Note 1</th>
+                            <th>Note 2</th>
+                            <th>Note 3</th>
+                            <th>Moyenne</th>
+                            <th>Statut</th>
+                            <th>Date Soumission</th>
+                            <th class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for note in notes %}
+                        <tr>
+                            <td>
+                                {% if note.statut == 'soumis' %}
+                                <input type="checkbox" name="note_ids" value="{{ note.pk }}" class="form-check-input note-checkbox">
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>{{ note.etudiant.matricule }}</strong><br>
+                                <small>{{ note.etudiant.get_full_name }}</small>
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ note.matiere.code }}</small><br>
+                                {{ note.matiere.nom }}
+                            </td>
+                            <td class="text-center">{{ note.note1|default:"—" }}</td>
+                            <td class="text-center">{{ note.note2|default:"—" }}</td>
+                            <td class="text-center">{{ note.note3|default:"—" }}</td>
+                            <td class="text-center">
+                                <strong>{{ note.moyenne }}/10</strong>
+                            </td>
+                            <td>
+                                {% if note.statut == 'soumis' %}
+                                    <span class="badge bg-warning">Soumis</span>
+                                {% elif note.statut == 'valide' %}
+                                    <span class="badge bg-success">Validé</span>
+                                {% elif note.statut == 'invalide' %}
+                                    <span class="badge bg-danger">Invalidé</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Brouillon</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if note.date_soumission %}
+                                    {{ note.date_soumission|date:"d/m/Y H:i" }}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if note.statut == 'soumis' %}
+                                    <a href="{% url 'gestion_notes:validation_notes_valider' note.pk %}" 
+                                       class="btn btn-sm btn-success me-1" title="Valider">
+                                        <i class="bi bi-check-lg"></i>
+                                    </a>
+                                    <a href="{% url 'gestion_notes:validation_notes_invalider' note.pk %}" 
+                                       class="btn btn-sm btn-danger" title="Invalider">
+                                        <i class="bi bi-x-lg"></i>
+                                    </a>
+                                {% elif note.statut == 'valide' %}
+                                    <a href="{% url 'gestion_notes:validation_notes_invalider' note.pk %}" 
+                                       class="btn btn-sm btn-warning" title="Invalider">
+                                        <i class="bi bi-arrow-counterclockwise"></i>
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                Aucune note trouvée
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Actions en lot -->
+            {% if stats.soumis > 0 %}
+            <div class="card-footer">
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check-all me-2"></i>Valider les notes sélectionnées
+                </button>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Info -->
+<div class="alert alert-info mt-3">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>Info :</strong> Sélectionnez une année précédente pour voir et invalider les notes des étudiants en dette.
+</div>
+
+<script>
+// Sélection multiple
+document.getElementById('select-all').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.note-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+});
+</script>
+{% endblock %}

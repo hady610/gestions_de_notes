@@ -3,6 +3,7 @@
 MODULE 2 : Gestion Académique - Forms
 """
 from django import forms
+from django.core.exceptions import ValidationError
 from .models import Departement, Niveau, AnneeAcademique, Etudiant, Enseignant
 
 
@@ -55,34 +56,44 @@ class NiveauForm(forms.ModelForm):
         }
 
 
+# ============= MODIFIÉ : Nouvelle version pour génération auto =============
 class AnneeAcademiqueForm(forms.ModelForm):
-    """Formulaire pour les années académiques"""
+    """
+    Formulaire pour les années académiques
+    Le champ 'annee' est généré automatiquement donc pas dans le formulaire
+    """
     class Meta:
         model = AnneeAcademique
-        fields = ['annee', 'date_debut', 'date_fin', 'est_active']
+        fields = ['date_debut', 'date_fin', 'est_active']  # ← CHANGÉ : 'annee' retiré
         widgets = {
-            'annee': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '2025-2026'
-            }),
             'date_debut': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+                'class': 'form-control', 
+                'type': 'date',
+                'placeholder': 'Date de début (ex: 1er septembre)'
             }),
             'date_fin': forms.DateInput(attrs={
-                'class': 'form-control',
-                'type': 'date'
+                'class': 'form-control', 
+                'type': 'date',
+                'placeholder': 'Date de fin (ex: 31 août)'
             }),
-            'est_active': forms.CheckboxInput(attrs={
-                'class': 'form-check-input'
-            }),
+            'est_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
-        labels = {
-            'annee': 'Année académique',
-            'date_debut': 'Date de début',
-            'date_fin': 'Date de fin',
-            'est_active': 'Année active'
+        help_texts = {
+            'date_debut': 'Le nom de l\'année sera généré automatiquement (Ex: 2025-2026)',
+            'est_active': 'Cocher pour activer cette année (désactive automatiquement les autres)',
         }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        date_debut = cleaned_data.get('date_debut')
+        date_fin = cleaned_data.get('date_fin')
+        
+        if date_debut and date_fin:
+            if date_fin <= date_debut:
+                raise ValidationError("La date de fin doit être après la date de début !")
+        
+        return cleaned_data
+# ============================================================================
 
 
 class EtudiantForm(forms.ModelForm):
@@ -97,7 +108,8 @@ class EtudiantForm(forms.ModelForm):
         widgets = {
             'matricule': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'ETU-2025-001'
+                'placeholder': 'XXX-XXX-XXX-XXX',
+                'maxlength': '15'  # 12 chiffres + 3 tirets
             }),
             'nom': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -189,3 +201,73 @@ class EnseignantForm(forms.ModelForm):
                 'accept': 'image/*'
             }),
         }
+
+
+# ============= NOUVEAU : Formulaire de filtrage des notes =============
+class NoteFilterForm(forms.Form):
+    """
+    Formulaire de filtrage pour les notes
+    Utilisé par le chef de département
+    """
+    annee = forms.ModelChoiceField(
+        queryset=AnneeAcademique.objects.all().order_by('-date_debut'),
+        required=False,
+        empty_label="-- Toutes les années --",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    matricule = forms.CharField(
+        required=False,
+        max_length=20,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Rechercher par matricule'
+        })
+    )
+    
+    niveau = forms.ModelChoiceField(
+        queryset=Niveau.objects.all().order_by('ordre'),
+        required=False,
+        empty_label="-- Tous les niveaux --",
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    statut = forms.ChoiceField(
+        required=False,
+        choices=[
+            ('', '-- Tous les statuts --'),
+            ('brouillon', 'Brouillon'),
+            ('soumis', 'Soumis'),
+            ('valide', 'Validé'),
+            ('invalide', 'Invalidé'),
+        ],
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+
+# apps/gestion_academique/forms.py - AJOUTER À LA FIN DU FICHIER
+
+
+
+class ImportEtudiantsForm(forms.Form):
+    """Formulaire pour importer des étudiants depuis Excel"""
+    fichier_excel = forms.FileField(
+        label='Fichier Excel',
+        help_text='Format accepté : .xlsx ou .csv',
+        widget=forms.FileInput(attrs={
+            'class': 'form-control',
+            'accept': '.xlsx,.xls,.csv'
+        })
+    )
+    
+    annee_academique = forms.ModelChoiceField(
+        queryset=None,  # Sera défini dans la vue
+        label='Année Académique',
+        help_text='Les étudiants seront inscrits dans cette année',
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.gestion_academique.models import AnneeAcademique
+        self.fields['annee_academique'].queryset = AnneeAcademique.objects.all().order_by('-est_active', '-date_debut')
+        self.fields['annee_academique'].initial = AnneeAcademique.objects.filter(est_active=True).first()

@@ -1,0 +1,82 @@
+{% extends 'gestion_academique/base_admin.html' %}
+{% load static %}
+{% block title %}Enseignants - UGANC{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 text-primary-custom fw-bold">Gestion des Enseignants</h1>
+        <p class="text-muted mb-0">Liste des enseignants</p>
+    </div>
+    <a href="{% url 'gestion_academique:enseignant_create' %}" class="btn btn-success">
+        <i class="bi bi-person-plus me-2"></i>Ajouter un Enseignant
+    </a>
+</div>
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-10">
+                <input type="text" name="search" class="form-control" placeholder="Rechercher..." value="{{ search }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search me-2"></i>Rechercher</button>
+            </div>
+        </form>
+    </div>
+</div>
+<div class="card">
+    <div class="card-header"><i class="bi bi-list-ul me-2"></i>Enseignants ({{ total }})</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Enseignant</th>
+                        <th>Grade</th>
+                        <th>Spécialité</th>
+                        <th>Départements</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ens in enseignants %}
+                    <tr>
+                        <td><strong>{{ ens.code }}</strong></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if ens.photo %}
+                                    <img src="{{ ens.photo.url }}" class="avatar me-2">
+                                {% else %}
+                                    <div class="avatar me-2">{{ ens.nom|first }}{{ ens.prenom|first }}</div>
+                                {% endif %}
+                                <div><strong>{{ ens.get_full_name }}</strong><br><small class="text-muted">{{ ens.email }}</small></div>
+                            </div>
+                        </td>
+                        <td>{{ ens.get_grade_display }}</td>
+                        <td>{{ ens.specialite }}</td>
+                        <td>
+                            {% for dept in ens.departements.all %}
+                                <span class="badge bg-primary">{{ dept.code }}</span>
+                            {% endfor %}
+                        </td>
+                        <td class="text-center">
+                            <a href="{% url 'gestion_academique:enseignant_detail' ens.pk %}" class="btn btn-sm btn-outline-info btn-icon me-1">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'gestion_academique:enseignant_update' ens.pk %}" class="btn btn-sm btn-outline-warning btn-icon me-1">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'gestion_academique:enseignant_delete' ens.pk %}" class="btn btn-sm btn-outline-danger btn-icon">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="text-center py-4">Aucun enseignant trouvé</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

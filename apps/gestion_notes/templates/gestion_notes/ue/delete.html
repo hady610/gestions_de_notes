@@ -1,0 +1,31 @@
+{% extends 'gestion_notes/base_notes.html' %}
+{% load static %}
+{% block title %}Supprimer UE{% endblock %}
+{% block main_content %}
+<div class="row">
+    <div class="col-lg-6 mx-auto">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white">
+                <i class="bi bi-exclamation-triangle me-2"></i>Confirmation Suppression
+            </div>
+            <div class="card-body">
+                <h5>Supprimer cette UE ?</h5>
+                <div class="bg-light p-3 rounded mb-3">
+                    <p class="mb-1"><strong>Code :</strong> {{ ue.code }}</p>
+                    <p class="mb-1"><strong>Nom :</strong> {{ ue.nom }}</p>
+                    <p class="mb-0"><strong>Matières :</strong>
+                        {% for mat in ue.matieres.all %}{{ mat.code }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                    </p>
+                </div>
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'gestion_notes:ue_list' %}" class="btn btn-outline-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-danger"><i class="bi bi-trash me-2"></i>Supprimer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

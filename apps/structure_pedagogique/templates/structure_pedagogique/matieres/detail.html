@@ -1,0 +1,61 @@
+{% extends 'structure_pedagogique/base_structure.html' %}
+{% load static %}
+
+{% block title %}{{ matiere.nom }} - UGANC{% endblock %}
+{% block main_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 text-primary-custom fw-bold"><i class="bi bi-book me-2"></i>Fiche Matière</h1>
+    <div>
+        <a href="{% url 'structure_pedagogique:matiere_update' matiere.pk %}" class="btn btn-warning me-2">
+            <i class="bi bi-pencil me-2"></i>Modifier
+        </a>
+        <a href="{% url 'structure_pedagogique:matiere_list' %}" class="btn btn-outline-secondary">Retour</a>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">Informations Générales</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6"><strong>Code :</strong> {{ matiere.code }}</div>
+                    <div class="col-md-6"><strong>Nom :</strong> {{ matiere.nom }}</div>
+                    <div class="col-md-6"><strong>Coefficient :</strong> <span class="badge bg-info fs-6">{{ matiere.coefficient }}</span></div>
+                    <div class="col-md-6"><strong>Crédits :</strong> <span class="badge bg-success fs-6">{{ matiere.credits }}</span></div>
+                    <div class="col-md-12"><strong>Description :</strong> {{ matiere.description|default:"—" }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header">Affectation</div>
+            <div class="card-body">
+                <p><strong>Départements :</strong>
+                    {% for dept in matiere.departements.all %}
+                        <span class="badge bg-primary me-1">{{ dept.nom }}</span>
+                    {% endfor %}
+                </p>
+                <p><strong>Niveau :</strong> {{ matiere.niveau.nom }}</p>
+                <p><strong>Semestre :</strong> {{ matiere.semestre.nom }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">Enseignants</div>
+            <div class="card-body">
+                {% for ens in matiere.enseignants.all %}
+                    <div class="d-flex align-items-center mb-2">
+                        <div class="avatar me-2" style="width:40px;height:40px;font-size:1rem;">{{ ens.nom|first }}{{ ens.prenom|first }}</div>
+                        <div>
+                            <strong>{{ ens.get_full_name }}</strong><br>
+                            <small class="text-muted">{{ ens.get_grade_display }}</small>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-muted mb-0">Aucun enseignant assigné</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

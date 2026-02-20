@@ -1,0 +1,98 @@
+{% extends 'structure_pedagogique/base_structure.html' %}
+{% load static %}
+{% block title %}{% if matiere %}Modifier{% else %}Ajouter{% endif %} Matière - UGANC{% endblock %}
+{% block main_content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="d-flex justify-content-between mb-4">
+            <h1 class="h2 text-primary-custom fw-bold">
+                {% if matiere %}<i class="bi bi-pencil-square me-2"></i>Modifier{% else %}<i class="bi bi-plus-circle me-2"></i>Ajouter{% endif %} une Matière
+            </h1>
+            <a href="{% url 'structure_pedagogique:matiere_list' %}" class="btn btn-outline-secondary">Retour</a>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <h5 class="text-primary-custom mb-3">Informations Générales</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.code.label }} *</label>
+                            {{ form.code }}
+                            {% if form.code.errors %}<div class="text-danger">{{ form.code.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">{{ form.nom.label }} *</label>
+                            {{ form.nom }}
+                            {% if form.nom.errors %}<div class="text-danger">{{ form.nom.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h5 class="text-primary-custom mb-3">Coefficients et Crédits</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.coefficient.label }} *</label>
+                            {{ form.coefficient }}
+                            {% if form.coefficient.errors %}<div class="text-danger">{{ form.coefficient.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.credits.label }} *</label>
+                            {{ form.credits }}
+                            {% if form.credits.errors %}<div class="text-danger">{{ form.credits.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h5 class="text-primary-custom mb-3">Affectation</h5>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label">{{ form.departements.label }} *</label>
+                            <div class="border p-3 rounded bg-light">
+                                {{ form.departements }}
+                            </div>
+                            {% if form.departements.errors %}<div class="text-danger">{{ form.departements.errors.0 }}</div>{% endif %}
+                            <small class="text-muted">Sélectionnez un ou plusieurs départements</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.niveau.label }} *</label>
+                            {{ form.niveau }}
+                            {% if form.niveau.errors %}<div class="text-danger">{{ form.niveau.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.semestre.label }} *</label>
+                            {{ form.semestre }}
+                            {% if form.semestre.errors %}<div class="text-danger">{{ form.semestre.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <h5 class="text-primary-custom mb-3">Enseignants</h5>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label">{{ form.enseignants.label }}</label>
+                            <div class="border p-3 rounded bg-light" style="max-height: 300px; overflow-y: auto;">
+                                {{ form.enseignants }}
+                            </div>
+                            <small class="text-muted">Sélectionnez les enseignants qui enseignent cette matière (optionnel)</small>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">{{ form.description.label }}</label>
+                            {{ form.description }}
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'structure_pedagogique:matiere_list' %}" class="btn btn-outline-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">
+                            {% if matiere %}<i class="bi bi-save me-2"></i>Modifier{% else %}<i class="bi bi-plus-circle me-2"></i>Créer{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

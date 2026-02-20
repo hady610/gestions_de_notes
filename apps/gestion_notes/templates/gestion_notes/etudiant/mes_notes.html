@@ -1,0 +1,145 @@
+{% extends 'gestion_notes/base_notes.html' %}
+{% load static %}
+{% block title %}Mes Notes{% endblock %}
+{% block main_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 fw-bold" style="color:var(--primary-color);"><i class="bi bi-journal-text me-2"></i>Mes Notes</h1>
+        <p class="text-muted mb-0">{{ etudiant.get_full_name }} - {{ etudiant.matricule }}</p>
+    </div>
+    <a href="{% url 'gestion_notes:etudiant_releve' %}" class="btn btn-outline-primary">
+        <i class="bi bi-file-earmark-text me-2"></i>Mon Relevé
+    </a>
+</div>
+
+<!-- Info étudiant -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4"><strong>Département :</strong> {{ etudiant.departement.nom }}</div>
+            <div class="col-md-4"><strong>Niveau :</strong> {{ etudiant.niveau.nom }}</div>
+            <div class="col-md-4"><strong>Matricule :</strong> {{ etudiant.matricule }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- UE et Moyennes -->
+{% if ues_data %}
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-layers me-2"></i>Unités d'Enseignement - Résultats</div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Code UE</th>
+                    <th>Nom UE</th>
+                    <th>Semestre</th>
+                    <th>Matières</th>
+                    <th class="text-center">Moyenne UE</th>
+                    <th class="text-center">Résultat</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in ues_data %}
+                <tr>
+                    <td><strong>{{ item.ue.code }}</strong></td>
+                    <td>{{ item.ue.nom }}</td>
+                    <td>{{ item.ue.semestre.code }}</td>
+                    <td>
+                        {% for mat in item.matieres %}
+                            <span class="badge bg-secondary me-1">{{ mat.code }}</span>
+                        {% endfor %}
+                    </td>
+                    <td class="text-center"><strong style="font-size:1.1rem;">{{ item.moyenne }}/10</strong></td>
+                    <td class="text-center">
+                        {% if item.resultat == 'admis' %}
+                            <span class="badge bg-success fs-6">Admis</span>
+                        {% elif item.resultat == 'session' %}
+                            <span class="badge bg-warning text-dark fs-6">Session</span>
+                        {% else %}
+                            <span class="badge bg-danger fs-6">Dette</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Notes par semestre -->
+{% for sem, data in semestres_data.items %}
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-calendar me-2"></i>{{ sem.code }} - {{ sem.nom }}</span>
+        <span class="badge bg-primary fs-6">Moyenne Sem : {{ data.moyenne }}/10</span>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Matière</th>
+                    <th>Enseignant</th>
+                    <th class="text-center">Note 1 (×0.3)</th>
+                    <th class="text-center">Note 2 (×0.3)</th>
+                    <th class="text-center">Note 3 (×0.4)</th>
+                    <th class="text-center">Moyenne</th>
+                    <th class="text-center">Résultat</th>
+                    <th class="text-center">Statut</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for note in data.notes %}
+                <tr>
+                    <td><strong>{{ note.matiere.code }}</strong></td>
+                    <td>{{ note.matiere.nom }}</td>
+                    <td>{{ note.enseignant.get_full_name }}</td>
+                    <td class="text-center">{{ note.note1|default:"—" }}</td>
+                    <td class="text-center">{{ note.note2|default:"—" }}</td>
+                    <td class="text-center">{{ note.note3|default:"—" }}</td>
+                    <td class="text-center"><strong>{{ note.moyenne }}</strong></td>
+                    <td class="text-center">
+                        {% if note.moyenne >= 5 %}
+                            <span class="badge bg-success">Admis</span>
+                        {% elif note.moyenne >= 3 %}
+                            <span class="badge bg-warning text-dark">Session</span>
+                        {% else %}
+                            <span class="badge bg-danger">Dette</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if note.statut == 'soumis' %}
+                            <span class="badge bg-warning text-dark">Soumis</span>
+                        {% elif note.statut == 'valide' %}
+                            <span class="badge bg-success">Validé</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% empty %}
+<div class="card">
+    <div class="card-body text-center py-5">
+        <i class="bi bi-journal-x" style="font-size:3rem;color:#6c757d;"></i>
+        <h5 class="mt-3 text-muted">Aucune note disponible</h5>
+        <p class="text-muted">Les notes apparaîtront après soumission par vos enseignants</p>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Legende -->
+<div class="card">
+    <div class="card-body">
+        <strong>Légende :</strong>
+        <span class="badge bg-success ms-2">Admis (≥5)</span>
+        <span class="badge bg-warning text-dark ms-2">Session (≥3)</span>
+        <span class="badge bg-danger ms-2">Dette (&lt;3)</span>
+        <span class="text-muted ms-3">| Notes sur 10 | Moyenne = N1×0.3 + N2×0.3 + N3×0.4</span>
+    </div>
+</div>
+{% endblock %}

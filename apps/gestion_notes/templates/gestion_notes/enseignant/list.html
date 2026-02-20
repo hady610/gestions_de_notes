@@ -1,0 +1,205 @@
+{% extends 'gestion_notes/base_notes.html' %}
+{% load static %}
+
+{% block title %}Mes Notes - Enseignant{% endblock %}
+{% block main_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 fw-bold" style="color:var(--primary-color);">
+            <i class="bi bi-pencil-square me-2"></i>Saisie des Notes
+        </h1>
+        <p class="text-muted mb-0">{{ request.user.get_full_name }}</p>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Année Académique</label>
+                <select name="annee" class="form-select" onchange="this.form.submit()">
+                    {% for annee in annees %}
+                    <option value="{{ annee.pk }}" 
+                        {% if annee_selectionnee and annee.pk == annee_selectionnee.pk %}selected{% endif %}>
+                        {{ annee.annee }} {% if annee.est_active %}★{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+                <small class="text-muted">
+                    {% if annee_selectionnee.est_active %}
+                        ★ Année active
+                    {% else %}
+                        Année précédente - étudiants en dette visibles
+                    {% endif %}
+                </small>
+            </div>
+            
+            <div class="col-md-6">
+                <label class="form-label">Matière</label>
+                <select name="matiere" class="form-select" onchange="this.form.submit()">
+                    <option value="">-- Toutes mes matières --</option>
+                    {% for mat in matieres %}
+                    <option value="{{ mat.pk }}" 
+                        {% if matiere_selectionnee and mat.pk == matiere_selectionnee.pk %}selected{% endif %}>
+                        {{ mat.code }} - {{ mat.nom }} ({{ mat.niveau.code }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel me-2"></i>Filtrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Statistiques -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-file-earmark-text" style="font-size: 2rem; color: var(--primary-color);"></i>
+                <h5 class="mt-2 mb-0">{{ stats.total }}</h5>
+                <small class="text-muted">Total Notes</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-file-earmark" style="font-size: 2rem; color: #6c757d;"></i>
+                <h5 class="mt-2 mb-0">{{ stats.brouillon }}</h5>
+                <small class="text-muted">Brouillon</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-clock-history" style="font-size: 2rem; color: #ffc107;"></i>
+                <h5 class="mt-2 mb-0">{{ stats.soumis }}</h5>
+                <small class="text-muted">Soumis</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-check-circle" style="font-size: 2rem; color: #198754;"></i>
+                <h5 class="mt-2 mb-0">{{ stats.valide }}</h5>
+                <small class="text-muted">Validés</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-x-circle" style="font-size: 2rem; color: #dc3545;"></i>
+                <h5 class="mt-2 mb-0">{{ stats.invalide }}</h5>
+                <small class="text-muted">Invalidés</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alerte étudiants en dette -->
+{% if matiere_selectionnee and etudiants_dette %}
+<div class="alert alert-warning">
+    <h6 class="alert-heading">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        Étudiants en dette pour {{ matiere_selectionnee.nom }}
+    </h6>
+    <p class="mb-0">
+        <strong>{{ etudiants_dette.total }}</strong> étudiant(s) en dette :
+        {{ etudiants_dette.avec_notes|length }} avec notes non validées,
+        {{ etudiants_dette.sans_notes|length }} sans notes
+    </p>
+</div>
+{% endif %}
+
+<!-- Table notes -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-clipboard-check me-2"></i>
+        Notes ({{ notes|length }})
+        {% if matiere_selectionnee %} - {{ matiere_selectionnee.nom }}{% endif %}
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Étudiant</th>
+                        <th>Matière</th>
+                        <th>Note 1</th>
+                        <th>Note 2</th>
+                        <th>Note 3</th>
+                        <th>Moyenne</th>
+                        <th>Statut</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for note in notes %}
+                    <tr>
+                        <td>
+                            <strong>{{ note.etudiant.matricule }}</strong><br>
+                            <small>{{ note.etudiant.nom }} {{ note.etudiant.prenom }}</small>
+                        </td>
+                        <td>
+                            <small class="text-muted">{{ note.matiere.code }}</small><br>
+                            {{ note.matiere.nom }}
+                        </td>
+                        <td class="text-center">{{ note.note1|default:"—" }}</td>
+                        <td class="text-center">{{ note.note2|default:"—" }}</td>
+                        <td class="text-center">{{ note.note3|default:"—" }}</td>
+                        <td class="text-center"><strong>{{ note.moyenne }}/10</strong></td>
+                        <td>
+                            {% if note.statut == 'brouillon' %}
+                                <span class="badge bg-secondary">Brouillon</span>
+                            {% elif note.statut == 'soumis' %}
+                                <span class="badge bg-warning">Soumis</span>
+                            {% elif note.statut == 'valide' %}
+                                <span class="badge bg-success">Validé</span>
+                            {% else %}
+                                <span class="badge bg-danger">Invalidé</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if note.peut_modifier %}
+                                <a href="{% url 'gestion_notes:enseignant_note_saisir' note.etudiant.pk note.matiere.pk %}" 
+                                   class="btn btn-sm btn-outline-primary btn-icon" title="Modifier">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            {% else %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-lock"></i> Validée
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Aucune note saisie
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info mt-3">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>Info :</strong> Sélectionnez une année précédente pour voir les étudiants en dette.
+    Les notes validées ne peuvent plus être modifiées sauf si le chef les invalide.
+</div>
+{% endblock %}

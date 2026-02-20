@@ -1,10 +1,14 @@
-# gestion_academique/models.py
+# gestion_academique/models.py - VERSION ÉTENDUE
 """
-MODULE 2 : Gestion Académique - Models
-Fichier : apps/gestion_academique/models.py
+MODULE 2 : Gestion Académique - Models ÉTENDU
+Ajout de :
+- Archivage des étudiants sortants
+- Gestion du passage automatique d'année
+- Historique des notes par année
 """
 from django.db import models
 from django.core.validators import RegexValidator
+from django.utils import timezone
 from datetime import date
 
 
@@ -46,6 +50,10 @@ class AnneeAcademique(models.Model):
     date_fin = models.DateField(verbose_name="Date de fin")
     est_active = models.BooleanField(default=False, verbose_name="Active")
     
+    # Nouveau champ pour savoir si le passage d'année a été effectué
+    passage_effectue = models.BooleanField(default=False, verbose_name="Passage d'année effectué")
+    date_passage = models.DateTimeField(null=True, blank=True, verbose_name="Date du passage")
+    
     class Meta:
         verbose_name = "Année académique"
         verbose_name_plural = "Années académiques"
@@ -59,6 +67,16 @@ class AnneeAcademique(models.Model):
         if self.est_active:
             AnneeAcademique.objects.filter(est_active=True).update(est_active=False)
         super().save(*args, **kwargs)
+    
+    @staticmethod
+    def generer_nom_annee(date_creation):
+        """
+        Génère le nom de l'année académique selon le format YYYY-YYYY+1
+        Ex: si date_creation = 1er septembre 2025 → "2025-2026"
+        """
+        annee_debut = date_creation.year
+        annee_fin = annee_debut + 1
+        return f"{annee_debut}-{annee_fin}"
 
 
 class Etudiant(models.Model):
@@ -68,11 +86,17 @@ class Etudiant(models.Model):
         ('F', 'Féminin'),
     )
     
+    STATUT_CHOICES = (
+        ('actif', 'Actif'),
+        ('archive', 'Archivé'),
+        ('diplome', 'Diplômé'),
+    )
+    
     matricule = models.CharField(
         max_length=20, 
         unique=True, 
         verbose_name="Matricule",
-        validators=[RegexValidator(r'^ETU-\d{4}-\d{3}$', 'Format: ETU-2025-001')]
+        validators=[RegexValidator(r'^\d{3}-\d{3}-\d{3}-\d{3}$', 'Format: XXX-XXX-XXX-XXX')]
     )
     nom = models.CharField(max_length=100, verbose_name="Nom")
     prenom = models.CharField(max_length=100, verbose_name="Prénom")
@@ -93,10 +117,18 @@ class Etudiant(models.Model):
         verbose_name="Niveau"
     )
     annee_academique = models.ForeignKey(
-        AnneeAcademique, 
+        'AnneeAcademique', 
         on_delete=models.PROTECT, 
         related_name='etudiants',
         verbose_name="Année académique"
+    )
+    
+    # NOUVEAU : Statut de l'étudiant
+    statut = models.CharField(
+        max_length=20,
+        choices=STATUT_CHOICES,
+        default='actif',
+        verbose_name="Statut"
     )
     
     email = models.EmailField(blank=True, verbose_name="Email")
@@ -127,6 +159,115 @@ class Etudiant(models.Model):
            (today.month == self.date_naissance.month and today.day < self.date_naissance.day):
             age -= 1
         return age
+
+
+class EtudiantArchive(models.Model):
+    """
+    Archive des étudiants sortants (fin de L3)
+    Permet de suivre les diplômés et non-diplômés
+    """
+    STATUT_DIPLOME_CHOICES = (
+        ('diplome', 'Diplômé'),
+        ('non_diplome', 'Non diplômé'),
+    )
+    
+    etudiant = models.ForeignKey(
+        Etudiant,
+        on_delete=models.PROTECT,
+        related_name='archives',
+        verbose_name="Étudiant"
+    )
+    
+    departement = models.ForeignKey(
+        Departement,
+        on_delete=models.PROTECT,
+        related_name='archives',
+        verbose_name="Département"
+    )
+    
+    annee_sortie = models.ForeignKey(
+        AnneeAcademique,
+        on_delete=models.PROTECT,
+        related_name='sortants',
+        verbose_name="Année de sortie"
+    )
+    
+    statut_diplome = models.CharField(
+        max_length=20,
+        choices=STATUT_DIPLOME_CHOICES,
+        verbose_name="Statut diplôme"
+    )
+    
+    # Informations sur les UE manquantes pour les non-diplômés
+    ue_manquantes = models.TextField(
+        blank=True,
+        verbose_name="UE manquantes (JSON)",
+        help_text="Liste des codes UE non validées"
+    )
+    
+    date_archivage = models.DateTimeField(auto_now_add=True, verbose_name="Date d'archivage")
+    date_derniere_maj = models.DateTimeField(auto_now=True, verbose_name="Dernière mise à jour")
+    
+    class Meta:
+        verbose_name = "Étudiant archivé"
+        verbose_name_plural = "Étudiants archivés"
+        ordering = ['-date_archivage']
+        unique_together = ['etudiant', 'annee_sortie']
+    
+    def __str__(self):
+        return f"{self.etudiant.get_full_name()} - {self.get_statut_diplome_display()} ({self.annee_sortie.annee})"
+    
+    def verifier_et_maj_statut(self):
+        """
+        Vérifie si l'étudiant a validé toutes les UE manquantes
+        et met à jour automatiquement le statut vers "diplômé" si c'est le cas
+        """
+        if self.statut_diplome == 'diplome':
+            return False  # Déjà diplômé, rien à faire
+        
+        from apps.gestion_notes.models import UniteEnseignement
+        import json
+        
+        # Récupérer les UE manquantes
+        if not self.ue_manquantes:
+            # Pas d'UE manquantes enregistrées, devrait être diplômé
+            self.statut_diplome = 'diplome'
+            self.ue_manquantes = '[]'
+            self.save()
+            return True
+        
+        ue_codes_manquantes = json.loads(self.ue_manquantes)
+        
+        if not ue_codes_manquantes:
+            # Liste vide, peut passer à diplômé
+            self.statut_diplome = 'diplome'
+            self.save()
+            return True
+        
+        # Vérifier chaque UE manquante
+        ues_toujours_manquantes = []
+        
+        for ue_code in ue_codes_manquantes:
+            try:
+                ue = UniteEnseignement.objects.get(code=ue_code)
+                if not ue.est_valide_ue(self.etudiant):
+                    ues_toujours_manquantes.append(ue_code)
+            except UniteEnseignement.DoesNotExist:
+                # UE n'existe plus, on l'ignore
+                pass
+        
+        # Mettre à jour
+        if not ues_toujours_manquantes:
+            # Toutes les UE sont validées !
+            self.statut_diplome = 'diplome'
+            self.ue_manquantes = '[]'
+            self.save()
+            return True
+        else:
+            # Mettre à jour la liste des UE encore manquantes
+            self.ue_manquantes = json.dumps(ues_toujours_manquantes)
+            self.save()
+            return False
 
 
 class Enseignant(models.Model):

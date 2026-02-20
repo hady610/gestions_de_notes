@@ -1,0 +1,79 @@
+{% extends 'gestion_academique/base_admin.html' %}
+{% load static %}
+{% block title %}Années Académiques - UGANC{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 text-primary-custom fw-bold">Gestion des Années Académiques</h1>
+        <p class="text-muted mb-0">Liste des années académiques</p>
+    </div>
+    <div>
+        <!-- AJOUTÉ : Bouton passage d'année -->
+        <a href="{% url 'gestion_academique:passage_annee_form' %}" class="btn btn-primary me-2">
+            <i class="bi bi-arrow-repeat me-2"></i>Passage d'année
+        </a>
+        <a href="{% url 'gestion_academique:annee_create' %}" class="btn btn-success">
+            <i class="bi bi-plus-circle me-2"></i>Ajouter une Année
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><i class="bi bi-list-ul me-2"></i>Années Académiques ({{ total }})</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Année</th>
+                        <th>Date Début</th>
+                        <th>Date Fin</th>
+                        <th>Statut</th>
+                        <th>Passage Effectué</th> <!-- AJOUTÉ -->
+                        <th>Nb Étudiants</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for annee in annees %}
+                    <tr>
+                        <td><strong>{{ annee.annee }}</strong></td>
+                        <td>{{ annee.date_debut|date:"d/m/Y" }}</td>
+                        <td>{{ annee.date_fin|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if annee.est_active %}
+                                <span class="badge bg-success">Active</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <!-- AJOUTÉ : Colonne passage effectué -->
+                        <td>
+                            {% if annee.passage_effectue %}
+                                <span class="badge bg-info">
+                                    <i class="bi bi-check-circle"></i> Oui
+                                </span>
+                                <br><small class="text-muted">{{ annee.date_passage|date:"d/m/Y H:i" }}</small>
+                            {% else %}
+                                <span class="badge bg-warning">En attente</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ annee.nb_etudiants }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'gestion_academique:annee_update' annee.pk %}" class="btn btn-sm btn-outline-warning btn-icon me-1">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'gestion_academique:annee_delete' annee.pk %}" class="btn btn-sm btn-outline-danger btn-icon">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="text-center py-4">Aucune année trouvée</td></tr> <!-- colspan changé de 6 à 7 -->
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

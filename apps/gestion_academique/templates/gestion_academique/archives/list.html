@@ -1,0 +1,201 @@
+{% extends 'gestion_academique/base_admin.html' %}
+{% load static %}
+{% load json_filter %}
+
+{% block title %}Étudiants Archivés - UGANC{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 text-primary-custom fw-bold">
+            <i class="bi bi-archive me-2"></i>Étudiants Archivés (Sortants)
+        </h1>
+        <p class="text-muted mb-0">
+            {% if request.user.profile.is_admin %}
+                Tous les départements
+            {% else %}
+                Département : {{ request.user.profile.departement.nom }}
+            {% endif %}
+        </p>
+    </div>
+    <form method="post" action="{% url 'gestion_academique:archives_verifier_maj' %}" class="d-inline">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-info">
+            <i class="bi bi-arrow-repeat me-2"></i>Vérifier Statuts Diplômés
+        </button>
+    </form>
+</div>
+
+<!-- Statistiques -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-archive-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
+                <h3 class="stat-value mt-2">{{ stats.total }}</h3>
+                <p class="text-muted mb-0">Total Archivés</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-mortarboard-fill" style="font-size: 3rem; color: #198754;"></i>
+                <h3 class="stat-value mt-2">{{ stats.diplomes }}</h3>
+                <p class="text-muted mb-0">Diplômés</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-hourglass-split" style="font-size: 3rem; color: #ffc107;"></i>
+                <h3 class="stat-value mt-2">{{ stats.non_diplomes }}</h3>
+                <p class="text-muted mb-0">Non Diplômés</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            {% if not request.user.profile.is_chef_departement %}
+            <div class="col-md-3">
+                <select name="departement" class="form-select">
+                    <option value="">Tous les départements</option>
+                    {% for dept in departements %}
+                    <option value="{{ dept.pk }}" {% if filters.departement == dept.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ dept.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            
+            <div class="col-md-3">
+                <select name="annee_sortie" class="form-select">
+                    <option value="">Toutes les années</option>
+                    {% for annee in annees %}
+                    <option value="{{ annee.pk }}" {% if filters.annee == annee.pk|stringformat:"s" %}selected{% endif %}>
+                        {{ annee.annee }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <select name="statut" class="form-select">
+                    <option value="">Tous les statuts</option>
+                    <option value="diplome" {% if filters.statut == "diplome" %}selected{% endif %}>Diplômés</option>
+                    <option value="non_diplome" {% if filters.statut == "non_diplome" %}selected{% endif %}>Non diplômés</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control" 
+                       placeholder="Rechercher (matricule, nom)..." value="{{ filters.search }}">
+            </div>
+            
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-funnel"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-list-ul me-2"></i>Archives ({{ stats.total }})
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Matricule</th>
+                        <th>Étudiant</th>
+                        <th>Département</th>
+                        <th>Année Sortie</th>
+                        <th>Statut</th>
+                        <th>UE Manquantes</th>
+                        <th>Date Archivage</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for archive in archives %}
+                    <tr>
+                        <td><strong>{{ archive.etudiant.matricule }}</strong></td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                {% if archive.etudiant.photo %}
+                                    <img src="{{ archive.etudiant.photo.url }}" class="avatar me-2" alt="">
+                                {% else %}
+                                    <div class="avatar me-2">
+                                        {{ archive.etudiant.nom|first }}{{ archive.etudiant.prenom|first }}
+                                    </div>
+                                {% endif %}
+                                <strong>{{ archive.etudiant.nom }} {{ archive.etudiant.prenom }}</strong>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if archive.departement.code == 'NTIC' %}bg-primary{% else %}bg-success{% endif %}">
+                                {{ archive.departement.code }}
+                            </span>
+                        </td>
+                        <td>{{ archive.annee_sortie.annee }}</td>
+                        <td>
+                            {% if archive.statut_diplome == 'diplome' %}
+                                <span class="badge bg-success">
+                                    <i class="bi bi-mortarboard-fill"></i> Diplômé
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning">
+                                    <i class="bi bi-hourglass-split"></i> Non Diplômé
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if archive.statut_diplome == 'diplome' %}
+                                <span class="text-success">
+                                    <i class="bi bi-check-circle"></i> Aucune
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger">
+                                    {{ archive.ue_manquantes|json_length }} UE
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>{{ archive.date_archivage|date:"d/m/Y H:i" }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'gestion_academique:archive_detail' archive.pk %}" 
+                               class="btn btn-sm btn-outline-info btn-icon" title="Détails">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4 text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            Aucun étudiant archivé
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="alert alert-info mt-3">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>Info :</strong> Le bouton "Vérifier Statuts Diplômés" vérifie automatiquement si des étudiants 
+    "Non Diplômés" ont validé toutes leurs UE manquantes et les passe en "Diplômé".
+</div>
+{% endblock %}

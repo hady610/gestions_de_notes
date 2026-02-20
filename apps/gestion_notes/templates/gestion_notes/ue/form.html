@@ -1,0 +1,48 @@
+{% extends 'gestion_notes/base_notes.html' %}
+{% load static %}
+{% block title %}{% if ue %}Modifier{% else %}Ajouter{% endif %} UE{% endblock %}
+{% block main_content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="d-flex justify-content-between mb-4">
+            <h1 class="h2 fw-bold" style="color:var(--primary-color);">
+                {% if ue %}Modifier{% else %}Ajouter{% endif %} une UE
+            </h1>
+            <a href="{% url 'gestion_notes:ue_list' %}" class="btn btn-outline-secondary">Retour</a>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.code.label }} *</label>
+                        {{ form.code }}
+                        {% if form.code.errors %}<div class="text-danger">{{ form.code.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.nom.label }} *</label>
+                        {{ form.nom }}
+                        {% if form.nom.errors %}<div class="text-danger">{{ form.nom.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.semestre.label }} *</label>
+                        {{ form.semestre }}
+                        {% if form.semestre.errors %}<div class="text-danger">{{ form.semestre.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.matieres.label }} *</label>
+                        <div class="border p-3 rounded bg-light">{{ form.matieres }}</div>
+                        <small class="text-muted">Sélectionnez 1 à 5 matières</small>
+                        {% if form.matieres.errors %}<div class="text-danger">{{ form.matieres.errors.0 }}</div>{% endif %}
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'gestion_notes:ue_list' %}" class="btn btn-outline-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">{% if ue %}Modifier{% else %}Créer{% endif %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

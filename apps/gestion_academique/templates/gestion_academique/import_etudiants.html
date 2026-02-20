@@ -1,0 +1,281 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Import Étudiants - UGANC{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-lg-10 mx-auto">
+            
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h2 fw-bold" style="color:var(--primary-color);">
+                        <i class="bi bi-file-earmark-excel me-2"></i>Import Étudiants depuis Excel
+                    </h1>
+                    <p class="text-muted mb-0">
+                        Inscrivez plusieurs étudiants en une seule fois
+                        {% if departement_limite %}
+                            <span class="badge bg-info ms-2">Département : {{ departement_limite.code }}</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <a href="{% url 'gestion_academique:etudiant_list' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Retour
+                </a>
+            </div>
+
+            <!-- Alerte limitation chef -->
+            {% if departement_limite %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle me-2"></i>
+                <strong>Chef de département :</strong> Vous ne pouvez importer que des étudiants du département <strong>{{ departement_limite.nom }} ({{ departement_limite.code }})</strong>.
+                Les étudiants d'autres départements dans le fichier seront automatiquement ignorés.
+            </div>
+            {% endif %}
+
+            <!-- Instructions -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <i class="bi bi-info-circle me-2"></i>Instructions
+                </div>
+                <div class="card-body">
+                    <ol class="mb-0">
+                        <li><strong>Téléchargez le modèle Excel</strong> ci-dessous</li>
+                        <li><strong>Remplissez</strong> les informations des étudiants (une ligne par étudiant)</li>
+                        {% if departement_limite %}
+                        <li><strong>Important :</strong> Dans la colonne "departement", indiquez <code>{{ departement_limite.code }}</code></li>
+                        {% endif %}
+                        <li><strong>Sauvegardez</strong> le fichier</li>
+                        <li><strong>Uploadez</strong> le fichier rempli ci-dessous</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Bouton téléchargement modèle -->
+            <div class="text-center mb-4">
+                <a href="{% url 'gestion_academique:telecharger_modele_excel' %}" class="btn btn-success btn-lg">
+                    <i class="bi bi-download me-2"></i>
+                    Télécharger le Modèle Excel
+                    {% if departement_limite %}({{ departement_limite.code }}){% endif %}
+                </a>
+            </div>
+
+            <!-- Formulaire Upload -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <i class="bi bi-upload me-2"></i>Upload Fichier Excel
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.fichier_excel.label }}</label>
+                                {{ form.fichier_excel }}
+                                <small class="form-text text-muted d-block">{{ form.fichier_excel.help_text }}</small>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold">{{ form.annee_academique.label }}</label>
+                                {{ form.annee_academique }}
+                                <small class="form-text text-muted d-block">{{ form.annee_academique.help_text }}</small>
+                            </div>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-cloud-upload me-2"></i>Importer les Étudiants
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Résultats -->
+            {% if resultat %}
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <i class="bi bi-check-circle me-2"></i>Résultats de l'Import
+                </div>
+                <div class="card-body">
+                    
+                    <!-- Stats -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="alert alert-success">
+                                <h5 class="alert-heading">
+                                    <i class="bi bi-check-circle-fill me-2"></i>Succès
+                                </h5>
+                                <p class="mb-0 fs-4"><strong>{{ resultat.succes }}</strong> étudiant(s) importé(s)</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="alert alert-warning">
+                                <h5 class="alert-heading">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>Erreurs
+                                </h5>
+                                <p class="mb-0 fs-4"><strong>{{ resultat.erreurs|length }}</strong> erreur(s)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Détails -->
+                    {% if resultat.details %}
+                    <h6 class="fw-bold mb-3">Détails des importations :</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Ligne</th>
+                                    <th>Matricule</th>
+                                    <th>Nom</th>
+                                    <th>Département</th>
+                                    <th>Statut</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for detail in resultat.details %}
+                                <tr>
+                                    <td>{{ detail.ligne }}</td>
+                                    <td>{{ detail.matricule }}</td>
+                                    <td>{{ detail.nom }}</td>
+                                    <td><span class="badge bg-secondary">{{ detail.departement }}</span></td>
+                                    <td>
+                                        {% if detail.statut == 'Créé' %}
+                                            <span class="badge bg-success">{{ detail.statut }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ detail.statut }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% endif %}
+
+                    <!-- Erreurs -->
+                    {% if resultat.erreurs %}
+                    <h6 class="fw-bold mb-3 text-danger">Erreurs détectées :</h6>
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            {% for erreur in resultat.erreurs %}
+                            <li>
+                                {% if erreur.ligne is not none %}
+                                    {# Erreur avec ligne #}
+                                    <strong>Ligne {{ erreur.ligne }} :</strong> {{ erreur.erreur }}
+                                {% elif erreur is mapping %}
+                                    {# Erreur sous forme de dict sans .ligne défini #}
+                                    {{ erreur.erreur|default:erreur }}
+                                {% else %}
+                                    {# Erreur simple (string) #}
+                                    {{ erreur }}
+                                {% endif %}
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Info colonnes -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <i class="bi bi-table me-2"></i>Colonnes du fichier Excel
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Colonne</th>
+                                    <th>Exemple</th>
+                                    <th>Obligatoire</th>
+                                    <th>Format</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><code>matricule</code></td>
+                                    <td>111-001-234-567</td>
+                                    <td><span class="badge bg-danger">Oui</span></td>
+                                    <td>XXX-XXX-XXX-XXX</td>
+                                </tr>
+                                <tr>
+                                    <td><code>nom</code></td>
+                                    <td>Diallo</td>
+                                    <td><span class="badge bg-danger">Oui</span></td>
+                                    <td>Texte</td>
+                                </tr>
+                                <tr>
+                                    <td><code>prenom</code></td>
+                                    <td>Mamadou</td>
+                                    <td><span class="badge bg-danger">Oui</span></td>
+                                    <td>Texte</td>
+                                </tr>
+                                <tr>
+                                    <td><code>date_naissance</code></td>
+                                    <td>15/03/2005</td>
+                                    <td><span class="badge bg-danger">Oui</span></td>
+                                    <td>JJ/MM/AAAA</td>
+                                </tr>
+                                <tr>
+                                    <td><code>lieu_naissance</code></td>
+                                    <td>Conakry</td>
+                                    <td><span class="badge bg-danger">Oui</span></td>
+                                    <td>Texte</td>
+                                </tr>
+                                <tr>
+                                    <td><code>sexe</code></td>
+                                    <td>M ou F</td>
+                                    <td><span class="badge bg-danger">Oui</span></td>
+                                    <td>M ou F</td>
+                                </tr>
+                                <tr>
+                                    <td><code>email</code></td>
+                                    <td>diallo@student.uganc.edu.gn</td>
+                                    <td><span class="badge bg-secondary">Non</span></td>
+                                    <td>Email</td>
+                                </tr>
+                                <tr>
+                                    <td><code>telephone</code></td>
+                                    <td>+224 123 456 789</td>
+                                    <td><span class="badge bg-secondary">Non</span></td>
+                                    <td>Téléphone</td>
+                                </tr>
+                                <tr>
+                                    <td><code>niveau</code></td>
+                                    <td>L1, L2, ou L3</td>
+                                    <td><span class="badge bg-danger">Oui</span></td>
+                                    <td>Code niveau</td>
+                                </tr>
+                                <tr>
+                                    <td><code>departement</code></td>
+                                    <td>
+                                        {% if departement_limite %}
+                                            <code>{{ departement_limite.code }}</code> uniquement
+                                        {% else %}
+                                            NTIC ou DL
+                                        {% endif %}
+                                    </td>
+                                    <td><span class="badge bg-danger">Oui</span></td>
+                                    <td>Code département</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

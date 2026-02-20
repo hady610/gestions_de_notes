@@ -1,0 +1,135 @@
+{% extends 'gestion_academique/base_admin.html' %}
+{% load static %}
+
+{% block title %}Détail Archive - {{ archive.etudiant.get_full_name }} - UGANC{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2 text-primary-custom fw-bold">
+                <i class="bi bi-file-earmark-person me-2"></i>Détail Archive
+            </h1>
+            <a href="{% url 'gestion_academique:archives_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Retour
+            </a>
+        </div>
+
+        <!-- Info étudiant -->
+        <div class="card mb-4">
+            <div class="card-header {% if archive.statut_diplome == 'diplome' %}bg-success{% else %}bg-warning{% endif %} text-white">
+                <i class="bi bi-person-badge me-2"></i>Informations Étudiant
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-2 text-center">
+                        {% if archive.etudiant.photo %}
+                            <img src="{{ archive.etudiant.photo.url }}" class="img-thumbnail rounded-circle" style="width: 120px; height: 120px; object-fit: cover;" alt="{{ archive.etudiant.get_full_name }}">
+                        {% else %}
+                            <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width: 120px; height: 120px; font-size: 3rem;">
+                                {{ archive.etudiant.nom|first }}{{ archive.etudiant.prenom|first }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-10">
+                        <h3 class="text-primary-custom">{{ archive.etudiant.get_full_name }}</h3>
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Matricule :</strong> {{ archive.etudiant.matricule }}</p>
+                                <p class="mb-2"><strong>Email :</strong> {{ archive.etudiant.email|default:"—" }}</p>
+                                <p class="mb-2"><strong>Téléphone :</strong> {{ archive.etudiant.telephone|default:"—" }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p class="mb-2"><strong>Département :</strong> {{ archive.departement.nom }}</p>
+                                <p class="mb-2"><strong>Année de sortie :</strong> {{ archive.annee_sortie.annee }}</p>
+                                <p class="mb-2"><strong>Date archivage :</strong> {{ archive.date_archivage|date:"d/m/Y H:i" }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statut diplôme -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-award me-2"></i>Statut Diplôme
+            </div>
+            <div class="card-body text-center py-4">
+                {% if archive.statut_diplome == 'diplome' %}
+                    <i class="bi bi-mortarboard-fill" style="font-size: 5rem; color: #198754;"></i>
+                    <h3 class="text-success mt-3">DIPLÔMÉ</h3>
+                    <p class="text-muted">Toutes les UE ont été validées avec succès</p>
+                    <span class="badge bg-success">
+                        <i class="bi bi-check-circle me-1"></i>Statut à jour
+                    </span>
+                {% else %}
+                    <i class="bi bi-hourglass-split" style="font-size: 5rem; color: #ffc107;"></i>
+                    <h3 class="text-warning mt-3">NON DIPLÔMÉ</h3>
+                    <p class="text-muted">Il reste des UE à valider</p>
+                    <span class="badge bg-warning">
+                        <i class="bi bi-clock-history me-1"></i>En attente de validation
+                    </span>
+                {% endif %}
+                
+                <p class="mt-3 mb-0">
+                    <small class="text-muted">Dernière mise à jour : {{ archive.date_derniere_maj|date:"d/m/Y H:i" }}</small>
+                </p>
+            </div>
+        </div>
+
+        <!-- UE Manquantes -->
+        {% if archive.statut_diplome == 'non_diplome' and ues_manquantes %}
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <i class="bi bi-exclamation-triangle me-2"></i>UE Manquantes ({{ ues_manquantes|length }})
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Code UE</th>
+                                <th>Nom UE</th>
+                                <th>Semestre</th>
+                                <th>Moyenne</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in ues_manquantes %}
+                            <tr>
+                                <td><strong>{{ item.ue.code }}</strong></td>
+                                <td>{{ item.ue.nom }}</td>
+                                <td>{{ item.ue.semestre.nom }}</td>
+                                <td class="text-center">
+                                    <strong>{{ item.moyenne }}/10</strong>
+                                </td>
+                                <td>
+                                    {% if item.est_valide %}
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> Validée
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-danger">
+                                            <i class="bi bi-x-circle"></i> Non validée
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-info mt-3">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Note :</strong> Dès que cet étudiant aura validé toutes ses UE manquantes, 
+            son statut passera automatiquement à "Diplômé" lors de la prochaine validation de note ou vérification manuelle.
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

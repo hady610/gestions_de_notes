@@ -1,0 +1,49 @@
+{% extends 'gestion_academique/base_admin.html' %}
+{% load static %}
+
+{% block title %}{% if annee %}Modifier{% else %}Ajouter{% endif %} Année - UGANC{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2 text-primary-custom fw-bold">
+                {% if annee %}<i class="bi bi-pencil-square me-2"></i>Modifier{% else %}<i class="bi bi-plus-circle me-2"></i>Ajouter{% endif %} l'Année
+            </h1>
+            <a href="{% url 'gestion_academique:annee_list' %}" class="btn btn-outline-secondary">Retour</a>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.annee.label }}</label>
+                        {{ form.annee }}
+                        {% if form.annee.errors %}<div class="text-danger">{{ form.annee.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.date_debut.label }}</label>
+                            {{ form.date_debut }}
+                            {% if form.date_debut.errors %}<div class="text-danger">{{ form.date_debut.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">{{ form.date_fin.label }}</label>
+                            {{ form.date_fin }}
+                            {% if form.date_fin.errors %}<div class="text-danger">{{ form.date_fin.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        {{ form.est_active }}
+                        <label class="form-check-label">{{ form.est_active.label }}</label>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'gestion_academique:annee_list' %}" class="btn btn-outline-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">{% if annee %}Modifier{% else %}Créer{% endif %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

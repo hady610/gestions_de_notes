@@ -1,0 +1,207 @@
+{% extends 'gestion_notes/base_notes.html' %}
+{% load static %}
+
+{% block title %}Saisir Note - UGANC{% endblock %}
+{% block main_content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2 fw-bold" style="color:var(--primary-color);">
+                <i class="bi bi-pencil-square me-2"></i>
+                {% if created %}Saisir{% else %}Modifier{% endif %} Note
+            </h1>
+            <a href="{% url 'gestion_notes:enseignant_notes_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Retour
+            </a>
+        </div>
+
+        <!-- Info étudiant -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <i class="bi bi-person-badge me-2"></i>Étudiant
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-8">
+                        <h5 class="text-primary-custom">{{ etudiant.nom }} {{ etudiant.prenom }}</h5>
+                        <p class="mb-1"><strong>Matricule :</strong> {{ etudiant.matricule }}</p>
+                        <p class="mb-1"><strong>Niveau :</strong> {{ etudiant.niveau.nom }}</p>
+                        <p class="mb-0"><strong>Année :</strong> {{ etudiant.annee_academique.annee }}</p>
+                    </div>
+                    <div class="col-md-4 text-end">
+                        {% if etudiant.photo %}
+                            <img src="{{ etudiant.photo.url }}" class="img-thumbnail rounded-circle" style="width: 100px; height: 100px; object-fit: cover;" alt="">
+                        {% else %}
+                            <div class="rounded-circle bg-primary text-white d-inline-flex align-items-center justify-content-center" style="width: 100px; height: 100px; font-size: 2.5rem;">
+                                {{ etudiant.nom|first }}{{ etudiant.prenom|first }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Info matière -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <i class="bi bi-book me-2"></i>Matière
+            </div>
+            <div class="card-body">
+                <h5 class="text-primary-custom">{{ matiere.nom }}</h5>
+                <p class="mb-1"><strong>Code :</strong> {{ matiere.code }}</p>
+                <p class="mb-1"><strong>Coefficient :</strong> {{ matiere.coefficient }}</p>
+                <p class="mb-0"><strong>Crédits :</strong> {{ matiere.credits }}</p>
+            </div>
+        </div>
+
+        <!-- Formulaire de saisie -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <i class="bi bi-123 me-2"></i>Saisie des Notes
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Les notes sont sur 10 points. La moyenne est calculée automatiquement : 
+                        <strong>Moyenne = (Note1 × 0.3) + (Note2 × 0.3) + (Note3 × 0.4)</strong>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <label class="form-label">Note 1 (30%) *</label>
+                            <input type="number" name="note1" class="form-control form-control-lg" 
+                                   min="0" max="10" step="0.01" 
+                                   value="{{ note.note1|default:'' }}" 
+                                   placeholder="0.00" required>
+                            <small class="text-muted">Sur 10</small>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Note 2 (30%) *</label>
+                            <input type="number" name="note2" class="form-control form-control-lg" 
+                                   min="0" max="10" step="0.01" 
+                                   value="{{ note.note2|default:'' }}" 
+                                   placeholder="0.00" required>
+                            <small class="text-muted">Sur 10</small>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label">Note 3 (40%) *</label>
+                            <input type="number" name="note3" class="form-control form-control-lg" 
+                                   min="0" max="10" step="0.01" 
+                                   value="{{ note.note3|default:'' }}" 
+                                   placeholder="0.00" required>
+                            <small class="text-muted">Sur 10</small>
+                        </div>
+                    </div>
+
+                    <!-- Aperçu moyenne -->
+                    <div class="card bg-light mb-4">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <h6 class="mb-0">Moyenne actuelle :</h6>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <h4 class="mb-0 text-primary-custom">
+                                        <strong id="moyenne-preview">{{ note.moyenne|default:"0.00" }}/10</strong>
+                                    </h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Statut actuel -->
+                    {% if note.statut %}
+                    <div class="alert alert-secondary">
+                        <strong>Statut actuel :</strong> 
+                        {% if note.statut == 'brouillon' %}
+                            <span class="badge bg-secondary">Brouillon</span>
+                        {% elif note.statut == 'soumis' %}
+                            <span class="badge bg-warning">Soumis</span>
+                        {% elif note.statut == 'valide' %}
+                            <span class="badge bg-success">Validé</span>
+                        {% else %}
+                            <span class="badge bg-danger">Invalidé</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <hr class="my-4">
+
+                    <!-- Boutons d'action -->
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'gestion_notes:enseignant_notes_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Annuler
+                        </a>
+                        <div>
+                            <button type="submit" name="action" value="save" class="btn btn-secondary me-2">
+                                <i class="bi bi-save me-2"></i>Enregistrer en Brouillon
+                            </button>
+                            <button type="submit" name="action" value="submit" class="btn btn-success">
+                                <i class="bi bi-send me-2"></i>Soumettre au Chef
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Info -->
+        <div class="alert alert-info mt-3">
+            <i class="bi bi-info-circle me-2"></i>
+            <ul class="mb-0">
+                <li><strong>Brouillon :</strong> La note est sauvegardée mais pas encore soumise au chef de département</li>
+                <li><strong>Soumettre :</strong> La note est envoyée au chef pour validation et vous ne pourrez plus la modifier</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<script>
+// Calcul automatique de la moyenne
+document.addEventListener('DOMContentLoaded', function() {
+    const note1Input = document.querySelector('input[name="note1"]');
+    const note2Input = document.querySelector('input[name="note2"]');
+    const note3Input = document.querySelector('input[name="note3"]');
+    const moyennePreview = document.getElementById('moyenne-preview');
+
+    function calculerMoyenne() {
+        const n1 = parseFloat(note1Input.value) || 0;
+        const n2 = parseFloat(note2Input.value) || 0;
+        const n3 = parseFloat(note3Input.value) || 0;
+        
+        const moyenne = (n1 * 0.3) + (n2 * 0.3) + (n3 * 0.4);
+        moyennePreview.textContent = moyenne.toFixed(2) + '/10';
+        
+        // Changer la couleur selon le résultat
+        if (moyenne >= 5) {
+            moyennePreview.className = 'text-success';
+        } else if (moyenne >= 3) {
+            moyennePreview.className = 'text-warning';
+        } else {
+            moyennePreview.className = 'text-danger';
+        }
+    }
+
+    note1Input.addEventListener('input', calculerMoyenne);
+    note2Input.addEventListener('input', calculerMoyenne);
+    note3Input.addEventListener('input', calculerMoyenne);
+    
+    // Calculer au chargement
+    calculerMoyenne();
+});
+</script>
+{% endblock %}
+```
+
+---
+
+## ✅ RÉSUMÉ
+
+Crée ce fichier :
+```
+apps\gestion_notes\templates\gestion_notes\enseignant\saisir.html

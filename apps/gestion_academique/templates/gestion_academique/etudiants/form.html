@@ -1,0 +1,205 @@
+{% extends 'gestion_academique/base_admin.html' %}
+{% load static %}
+
+{% block title %}{% if etudiant %}Modifier{% else %}Ajouter{% endif %} Étudiant - UGANC{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2 text-primary-custom fw-bold">
+                {% if etudiant %}
+                    <i class="bi bi-pencil-square me-2"></i>Modifier l'Étudiant
+                {% else %}
+                    <i class="bi bi-person-plus me-2"></i>Ajouter un Étudiant
+                {% endif %}
+            </h1>
+            <a href="{% url 'gestion_academique:etudiant_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Retour
+            </a>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    {% csrf_token %}
+                    
+                    <h5 class="text-primary-custom mb-3">Informations Personnelles</h5>
+                    <div class="row g-3">
+                       <div class="col-md-4">
+                            <label for="{{ form.matricule.id_for_label }}" class="form-label">{{ form.matricule.label }} *</label>
+                            {{ form.matricule }}
+                            {% if form.matricule.errors %}
+                                <div class="text-danger small mt-1">{{ form.matricule.errors.0 }}</div>
+                            {% endif %}
+                            <small class="text-muted">Format: XXX-XXX-XXX-XXX</small>
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.nom.id_for_label }}" class="form-label">{{ form.nom.label }} *</label>
+                            {{ form.nom }}
+                            {% if form.nom.errors %}
+                                <div class="text-danger small mt-1">{{ form.nom.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.prenom.id_for_label }}" class="form-label">{{ form.prenom.label }} *</label>
+                            {{ form.prenom }}
+                            {% if form.prenom.errors %}
+                                <div class="text-danger small mt-1">{{ form.prenom.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.date_naissance.id_for_label }}" class="form-label">{{ form.date_naissance.label }} *</label>
+                            {{ form.date_naissance }}
+                            {% if form.date_naissance.errors %}
+                                <div class="text-danger small mt-1">{{ form.date_naissance.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.lieu_naissance.id_for_label }}" class="form-label">{{ form.lieu_naissance.label }} *</label>
+                            {{ form.lieu_naissance }}
+                            {% if form.lieu_naissance.errors %}
+                                <div class="text-danger small mt-1">{{ form.lieu_naissance.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.sexe.id_for_label }}" class="form-label">{{ form.sexe.label }} *</label>
+                            {{ form.sexe }}
+                            {% if form.sexe.errors %}
+                                <div class="text-danger small mt-1">{{ form.sexe.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h5 class="text-primary-custom mb-3">Informations Académiques</h5>
+                    <div class="row g-3">
+                            <div class="col-md-4">
+                            <label for="{{ form.departement.id_for_label }}" class="form-label">{{ form.departement.label }} *</label>
+                            {% if force_departement %}
+                                <!-- Afficher en readonly pour le Chef -->
+                                <input type="text" class="form-control" value="{{ force_departement.nom }}" readonly>
+                                <input type="hidden" name="departement" value="{{ force_departement.id }}">
+                                <small class="text-muted d-block">Votre département (non modifiable)</small>
+                            {% else %}
+                                <!-- Normal pour Admin/Directeur -->
+                                {{ form.departement }}
+                            {% endif %}
+                            {% if form.departement.errors %}
+                                <div class="text-danger small mt-1">{{ form.departement.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.niveau.id_for_label }}" class="form-label">{{ form.niveau.label }} *</label>
+                            {{ form.niveau }}
+                            {% if form.niveau.errors %}
+                                <div class="text-danger small mt-1">{{ form.niveau.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="{{ form.annee_academique.id_for_label }}" class="form-label">{{ form.annee_academique.label }} *</label>
+                            {{ form.annee_academique }}
+                            {% if form.annee_academique.errors %}
+                                <div class="text-danger small mt-1">{{ form.annee_academique.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <h5 class="text-primary-custom mb-3">Coordonnées</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.telephone.id_for_label }}" class="form-label">{{ form.telephone.label }}</label>
+                            {{ form.telephone }}
+                            {% if form.telephone.errors %}
+                                <div class="text-danger small mt-1">{{ form.telephone.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="{{ form.photo.id_for_label }}" class="form-label">{{ form.photo.label }}</label>
+                            {{ form.photo }}
+                            {% if form.photo.errors %}
+                                <div class="text-danger small mt-1">{{ form.photo.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-12">
+                            <label for="{{ form.adresse.id_for_label }}" class="form-label">{{ form.adresse.label }}</label>
+                            {{ form.adresse }}
+                            {% if form.adresse.errors %}
+                                <div class="text-danger small mt-1">{{ form.adresse.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'gestion_academique:etudiant_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>{% if etudiant %}Modifier{% else %}Créer{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% block extra_js %}
+<script>
+    // Auto-format du matricule avec tirets
+    document.addEventListener('DOMContentLoaded', function() {
+        const matriculeInput = document.getElementById('{{ form.matricule.id_for_label }}');
+        
+        if (matriculeInput) {
+            matriculeInput.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, ''); // Enlever tout sauf les chiffres
+                
+                // Limiter à 12 chiffres
+                if (value.length > 12) {
+                    value = value.substring(0, 12);
+                }
+                
+                // Ajouter les tirets automatiquement
+                let formatted = '';
+                for (let i = 0; i < value.length; i++) {
+                    if (i > 0 && i % 3 === 0) {
+                        formatted += '-';
+                    }
+                    formatted += value[i];
+                }
+                
+                e.target.value = formatted;
+            });
+            
+            // Empêcher la saisie de caractères non-numériques
+            matriculeInput.addEventListener('keypress', function(e) {
+                if (!/[0-9-]/.test(e.key) && e.key !== 'Backspace' && e.key !== 'Delete') {
+                    e.preventDefault();
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'gestion_academique/base_admin.html' %}
+{% load static %}
+
+{% block title %}Passage d'Année Automatique - UGANC{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2 text-primary-custom fw-bold">
+                <i class="bi bi-arrow-repeat me-2"></i>Passage d'Année Automatique
+            </h1>
+            <a href="{% url 'gestion_academique:annee_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Retour
+            </a>
+        </div>
+
+        <!-- Info année courante -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <i class="bi bi-info-circle me-2"></i>Année Académique Courante
+            </div>
+            <div class="card-body">
+                <h4 class="text-primary-custom">{{ annee_active.annee }}</h4>
+                <p class="text-muted mb-0">
+                    Du {{ annee_active.date_debut|date:"d/m/Y" }} au {{ annee_active.date_fin|date:"d/m/Y" }}
+                </p>
+            </div>
+        </div>
+
+        <!-- Statistiques étudiants -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-1-circle-fill" style="font-size: 3rem; color: #0d6efd;"></i>
+                        <h3 class="stat-value mt-2">{{ stats.l1 }}</h3>
+                        <p class="text-muted mb-0">Étudiants L1</p>
+                        <small class="text-success">→ Passeront en L2</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-2-circle-fill" style="font-size: 3rem; color: #198754;"></i>
+                        <h3 class="stat-value mt-2">{{ stats.l2 }}</h3>
+                        <p class="text-muted mb-0">Étudiants L2</p>
+                        <small class="text-success">→ Passeront en L3</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <i class="bi bi-3-circle-fill" style="font-size: 3rem; color: #ffc107;"></i>
+                        <h3 class="stat-value mt-2">{{ stats.l3 }}</h3>
+                        <p class="text-muted mb-0">Étudiants L3</p>
+                        <small class="text-warning">→ Seront archivés</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="alert alert-success">
+            <i class="bi bi-check-circle me-2"></i>
+            <strong>Total :</strong> {{ stats.total }} étudiant(s) seront traités automatiquement
+        </div>
+
+        <!-- Formulaire -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <i class="bi bi-arrow-right-circle me-2"></i>Sélectionner la Nouvelle Année
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'gestion_academique:passage_annee_executer' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">Nouvelle année académique cible *</label>
+                        <select name="nouvelle_annee_id" class="form-select form-select-lg" required>
+                            <option value="">-- Sélectionner l'année cible --</option>
+                            {% for annee in annees_candidates %}
+                            <option value="{{ annee.pk }}">{{ annee.annee }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="text-muted">
+                            Sélectionnez l'année vers laquelle vous souhaitez faire passer les étudiants
+                        </small>
+                    </div>
+
+                    <!-- Avertissements -->
+                    <div class="alert alert-warning">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Attention - Points Importants
+                        </h6>
+                        <ul class="mb-0">
+                            <li><strong>TOUS les étudiants</strong> passeront automatiquement (pas de redoublement)</li>
+                            <li>Les étudiants L3 seront <strong>archivés</strong> avec statut diplômé/non diplômé</li>
+                            <li>L'année {{ annee_active.annee }} sera marquée comme "passage effectué"</li>
+                            <li>Cette opération est <strong>irréversible</strong></li>
+                        </ul>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'gestion_academique:annee_list' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-2"></i>Annuler
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg" 
+                                onclick="return confirm('⚠️ CONFIRMATION REQUISE\n\nÊtes-vous sûr de vouloir lancer le passage d\'année ?\n\nCette opération va :\n- Faire passer tous les étudiants automatiquement\n- Archiver les étudiants de L3\n\nCette action est IRRÉVERSIBLE !')">
+                            <i class="bi bi-check-circle me-2"></i>Lancer le Passage d'Année
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

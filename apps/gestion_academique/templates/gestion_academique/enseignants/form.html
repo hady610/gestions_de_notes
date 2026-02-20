@@ -1,0 +1,77 @@
+{% extends 'gestion_academique/base_admin.html' %}
+{% load static %}
+{% block title %}{% if enseignant %}Modifier{% else %}Ajouter{% endif %} Enseignant - UGANC{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2 text-primary-custom fw-bold">
+                {% if enseignant %}<i class="bi bi-pencil-square me-2"></i>Modifier{% else %}<i class="bi bi-person-plus me-2"></i>Ajouter{% endif %} l'Enseignant
+            </h1>
+            <a href="{% url 'gestion_academique:enseignant_list' %}" class="btn btn-outline-secondary">Retour</a>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <h5 class="text-primary-custom mb-3">Informations Personnelles</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.code.label }}</label>
+                            {{ form.code }}
+                            {% if form.code.errors %}<div class="text-danger">{{ form.code.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.nom.label }}</label>
+                            {{ form.nom }}
+                            {% if form.nom.errors %}<div class="text-danger">{{ form.nom.errors.0 }}</div>{% endif %}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">{{ form.prenom.label }}</label>
+                            {{ form.prenom }}
+                            {% if form.prenom.errors %}<div class="text-danger">{{ form.prenom.errors.0 }}</div>{% endif %}
+                        </div>
+                    </div>
+                    <hr class="my-4">
+                    <h5 class="text-primary-custom mb-3">Informations Académiques</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.grade.label }}</label>
+                            {{ form.grade }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.specialite.label }}</label>
+                            {{ form.specialite }}
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">{{ form.departements.label }}</label>
+                            {{ form.departements }}
+                        </div>
+                    </div>
+                    <hr class="my-4">
+                    <h5 class="text-primary-custom mb-3">Coordonnées</h5>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.email.label }}</label>
+                            {{ form.email }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ form.telephone.label }}</label>
+                            {{ form.telephone }}
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label">{{ form.photo.label }}</label>
+                            {{ form.photo }}
+                        </div>
+                    </div>
+                    <hr class="my-4">
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'gestion_academique:enseignant_list' %}" class="btn btn-outline-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">{% if enseignant %}Modifier{% else %}Créer{% endif %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

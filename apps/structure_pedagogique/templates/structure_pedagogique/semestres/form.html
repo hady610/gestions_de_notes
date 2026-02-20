@@ -1,0 +1,47 @@
+{% extends 'structure_pedagogique/base_structure.html' %}
+{% load static %}
+{% block title %}{% if semestre %}Modifier{% else %}Ajouter{% endif %} Semestre{% endblock %}
+{% block main_content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="d-flex justify-content-between mb-4">
+            <h1 class="h2 text-primary-custom fw-bold">
+                {% if semestre %}Modifier{% else %}Ajouter{% endif %} un Semestre
+            </h1>
+            <a href="{% url 'structure_pedagogique:semestre_list' %}" class="btn btn-outline-secondary">Retour</a>
+        </div>
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.code.label }} *</label>
+                        {{ form.code }}
+                        {% if form.code.errors %}<div class="text-danger">{{ form.code.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.nom.label }} *</label>
+                        {{ form.nom }}
+                        {% if form.nom.errors %}<div class="text-danger">{{ form.nom.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.niveau.label }} *</label>
+                        {{ form.niveau }}
+                        {% if form.niveau.errors %}<div class="text-danger">{{ form.niveau.errors.0 }}</div>{% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.ordre.label }} *</label>
+                        {{ form.ordre }}
+                        {% if form.ordre.errors %}<div class="text-danger">{{ form.ordre.errors.0 }}</div>{% endif %}
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'structure_pedagogique:semestre_list' %}" class="btn btn-outline-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">{% if semestre %}Modifier{% else %}Créer{% endif %}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

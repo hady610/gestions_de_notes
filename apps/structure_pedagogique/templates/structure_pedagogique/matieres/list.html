@@ -1,0 +1,105 @@
+{% extends 'structure_pedagogique/base_structure.html' %}
+{% load static %}
+{% block title %}Matières - UGANC{% endblock %}
+{% block main_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 text-primary-custom fw-bold">Gestion des Matières</h1>
+        <p class="text-muted mb-0">Liste des matières enseignées</p>
+    </div>
+    <a href="{% url 'structure_pedagogique:matiere_create' %}" class="btn btn-success">
+        <i class="bi bi-plus-circle me-2"></i>Ajouter une Matière
+    </a>
+</div>
+
+<!-- Filtres -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="Rechercher..." value="{{ search }}">
+            </div>
+            <div class="col-md-2">
+                <select name="departement" class="form-select">
+                    <option value="">Tous départements</option>
+                    {% for dept in departements %}
+                        <option value="{{ dept.id }}">{{ dept.code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="niveau" class="form-select">
+                    <option value="">Tous niveaux</option>
+                    {% for niv in niveaux %}
+                        <option value="{{ niv.id }}">{{ niv.code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select name="semestre" class="form-select">
+                    <option value="">Tous semestres</option>
+                    {% for sem in semestres %}
+                        <option value="{{ sem.id }}">{{ sem.code }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Filtrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+    <div class="card-header"><i class="bi bi-list-ul me-2"></i>Matières ({{ total }})</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>Code</th>
+                        <th>Matière</th>
+                        <th>Coef</th>
+                        <th>Crédits</th>
+                        <th>Départements</th>
+                        <th>Niveau</th>
+                        <th>Semestre</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for mat in matieres %}
+                    <tr>
+                        <td><strong>{{ mat.code }}</strong></td>
+                        <td>{{ mat.nom }}</td>
+                        <td><span class="badge bg-info">{{ mat.coefficient }}</span></td>
+                        <td><span class="badge bg-success">{{ mat.credits }}</span></td>
+                        <td>
+                            {% for dept in mat.departements.all %}
+                                <span class="badge bg-primary me-1">{{ dept.code }}</span>
+                            {% endfor %}
+                        </td>
+                        <td>{{ mat.niveau.code }}</td>
+                        <td>{{ mat.semestre.code }}</td>
+                        <td class="text-center">
+                            <a href="{% url 'structure_pedagogique:matiere_detail' mat.pk %}" class="btn btn-sm btn-outline-info">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{% url 'structure_pedagogique:matiere_update' mat.pk %}" class="btn btn-sm btn-outline-warning">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'structure_pedagogique:matiere_delete' mat.pk %}" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="8" class="text-center py-4">Aucune matière trouvée</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

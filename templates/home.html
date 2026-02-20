@@ -4,127 +4,448 @@
 {% block title %}Accueil - UGANC{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container-fluid px-2 px-md-4">
+
+    <!-- ===== HEADER COMMUN ===== -->
     <div class="row">
         <div class="col-12">
-            <div class="text-center py-5">
-                <div class="mb-4">
-                    <i class="bi bi-house-fill" style="font-size: 5rem; color: var(--primary-color);"></i>
-                </div>
-                <h1 class="display-4 fw-bold mb-3" style="color: var(--primary-color);">
+            <div class="text-center py-3 py-md-4">
+                <h1 class="h3 h-md-2 fw-bold mb-2 mb-md-3" style="color: var(--primary-color);">
                     Bienvenue sur UGANC
                 </h1>
-                <p class="lead text-muted mb-4">
-                    Système de Gestion des Notes - Centre Informatique
-                </p>
-                
-                <div class="alert alert-info d-inline-block">
+                <div class="alert alert-info d-inline-block mx-2 mx-md-0">
                     <i class="bi bi-person-circle me-2"></i>
-                    Connecté en tant que : <strong>{{ user.get_full_name|default:user.username }}</strong>
-                    <br>
+                    <span class="d-none d-sm-inline">Connecté en tant que :</span>
+                    <strong class="d-block d-sm-inline">{{ user.get_full_name|default:user.username }}</strong>
+                    <br class="d-none d-sm-block">
                     <i class="bi bi-shield-check me-2"></i>
-                    Rôle : <strong>{{ user.profile.get_role_display }}</strong>
+                    <span class="d-none d-sm-inline">Rôle :</span>
+                    <strong class="d-block d-sm-inline">{{ user.profile.get_role_display }}</strong>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row g-4 mt-4">
-        {% if user.profile.is_admin %}
-            <!-- Dashboard Admin -->
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-people-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
-                        <h5 class="card-title mt-3">Gestion Académique</h5>
-                        <p class="card-text text-muted">Étudiants, Enseignants, Départements</p>
-                        <a href="#" class="btn btn-primary">Accéder</a>
+    <!-- ============================================================ -->
+    <!-- DASHBOARD ADMIN (DOYEN)                                      -->
+    <!-- ============================================================ -->
+    {% if user.profile.is_admin %}
+
+        <!-- Statistiques -->
+        <div class="row g-3 g-md-4 mb-3 mb-md-4">
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width:50px;height:50px;background:#d4edda;">
+                            <i class="bi bi-people-fill" style="font-size:1.5rem;color:#28a745;"></i>
+                        </div>
+                        <h3 class="fw-bold mb-0" style="color:var(--primary-color); font-size: 1.5rem;">{{ nb_etudiants }}</h3>
+                        <p class="text-muted mb-0 small">Étudiants</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width:50px;height:50px;background:#cce5ff;">
+                            <i class="bi bi-person-fill-gear" style="font-size:1.5rem;color:#004085;"></i>
+                        </div>
+                        <h3 class="fw-bold mb-0" style="color:var(--primary-color); font-size: 1.5rem;">{{ nb_enseignants }}</h3>
+                        <p class="text-muted mb-0 small">Enseignants</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width:50px;height:50px;background:#fff3cd;">
+                            <i class="bi bi-building-fill" style="font-size:1.5rem;color:#856404;"></i>
+                        </div>
+                        <h3 class="fw-bold mb-0" style="color:var(--primary-color); font-size: 1.5rem;">{{ nb_departements }}</h3>
+                        <p class="text-muted mb-0 small">Départements</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 shadow-sm">
+                    <div class="card-body p-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width:50px;height:50px;background:#f8d7da;">
+                            <i class="bi bi-book-fill" style="font-size:1.5rem;color:#721c16;"></i>
+                        </div>
+                        <h3 class="fw-bold mb-0" style="color:var(--primary-color); font-size: 1.5rem;">{{ nb_matieres }}</h3>
+                        <p class="text-muted mb-0 small">Matières</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions du Doyen -->
+        <div class="row g-3 g-md-4">
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-building-fill" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Départements</h5>
+                        <p class="card-text text-muted small mb-2">Créer et gérer les départements</p>
+                        <a href="{% url 'gestion_academique:departement_list' %}" class="btn btn-primary btn-sm mt-auto">Accéder</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-calendar-fill" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Années Académiques</h5>
+                        <p class="card-text text-muted small mb-2">Gérer les années académiques</p>
+                        <a href="{% url 'gestion_academique:annee_list' %}" class="btn btn-primary btn-sm mt-auto">Accéder</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-layers-fill" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Niveaux</h5>
+                        <p class="card-text text-muted small mb-2">Gérer les niveaux (L1, L2, L3)</p>
+                        <a href="{% url 'gestion_academique:niveau_list' %}" class="btn btn-primary btn-sm mt-auto">Accéder</a>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-book-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
-                        <h5 class="card-title mt-3">Structure Pédagogique</h5>
-                        <p class="card-text text-muted">Matières, Semestres, Programmes</p>
-                        <a href="#" class="btn btn-primary">Accéder</a>
+            <!-- NOUVEAU : Card Import Étudiants -->
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-file-earmark-excel-fill" style="font-size: 2.5rem; color: #28a745;"></i>
+                        <h5 class="card-title mt-2 mb-1">Import Étudiants</h5>
+                        <p class="card-text text-muted small mb-2">Inscrivez plusieurs étudiants depuis Excel</p>
+                        <a href="{% url 'gestion_academique:import_etudiants' %}" class="btn btn-success btn-sm mt-auto">Accéder</a>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-file-earmark-text-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
-                        <h5 class="card-title mt-3">Bulletins</h5>
-                        <p class="card-text text-muted">Génération et gestion des bulletins</p>
-                        <a href="#" class="btn btn-primary">Accéder</a>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-archive-fill" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Archives</h5>
+                        <p class="card-text text-muted small mb-2">Étudiants archivés (tous départements)</p>
+                        <a href="{% url 'gestion_academique:archives_list' %}" class="btn btn-primary btn-sm mt-auto">Voir</a>
                     </div>
                 </div>
             </div>
 
-        {% elif user.profile.is_enseignant %}
-            <!-- Dashboard Enseignant -->
-            <div class="col-md-6">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-clipboard-check-fill" style="font-size: 3rem; color: var(--primary-color);"></i>
-                        <h5 class="card-title mt-3">Saisie des Notes</h5>
-                        <p class="card-text text-muted">Saisir et valider les notes</p>
-                        <a href="#" class="btn btn-primary">Accéder</a>
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-list-ul" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Semestres</h5>
+                        <p class="card-text text-muted small mb-2">Gérer les semestres</p>
+                        <a href="{% url 'structure_pedagogique:semestre_list' %}" class="btn btn-primary btn-sm mt-auto">Accéder</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-file-earmark-pdf-fill" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Bulletins</h5>
+                        <p class="card-text text-muted small mb-2">Générer les relevés PDF</p>
+                        <a href="{% url 'bulletins:liste_bulletins' %}" class="btn btn-primary btn-sm mt-auto">Accéder</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- ============================================================ -->
+    <!-- DASHBOARD CHEF DE DÉPARTEMENT                                -->
+    <!-- ============================================================ -->
+    {% elif user.profile.is_chef_departement %}
+
+        <!-- Titre département -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <h4 class="fw-bold h5 h-md-4" style="color:var(--primary-color);">
+                    <i class="bi bi-building-fill me-2"></i>
+                    <span class="d-none d-sm-inline">Département :</span>
+                    {{ departement.nom }} ({{ departement.code }})
+                </h4>
+            </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="row g-3 g-md-4 mb-3 mb-md-4">
+            <div class="col-4 col-md-4">
+                <div class="card text-center border-0 shadow-sm">
+                    <div class="card-body p-2 p-md-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width:50px;height:50px;background:#d4edda;">
+                            <i class="bi bi-people-fill" style="font-size:1.5rem;color:#28a745;"></i>
+                        </div>
+                        <h3 class="fw-bold mb-0" style="color:var(--primary-color); font-size: 1.5rem;">{{ nb_etudiants }}</h3>
+                        <p class="text-muted mb-0 small">Étudiants</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 col-md-4">
+                <div class="card text-center border-0 shadow-sm">
+                    <div class="card-body p-2 p-md-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width:50px;height:50px;background:#cce5ff;">
+                            <i class="bi bi-person-fill-gear" style="font-size:1.5rem;color:#004085;"></i>
+                        </div>
+                        <h3 class="fw-bold mb-0" style="color:var(--primary-color); font-size: 1.5rem;">{{ nb_enseignants }}</h3>
+                        <p class="text-muted mb-0 small">Enseignants</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-4 col-md-4">
+                <div class="card text-center border-0 shadow-sm">
+                    <div class="card-body p-2 p-md-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width:50px;height:50px;background:#f8d7da;">
+                            <i class="bi bi-book-fill" style="font-size:1.5rem;color:#721c16;"></i>
+                        </div>
+                        <h3 class="fw-bold mb-0" style="color:var(--primary-color); font-size: 1.5rem;">{{ nb_matieres }}</h3>
+                        <p class="text-muted mb-0 small">Matières</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="row g-3 g-md-4">
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-people-fill" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Étudiants</h5>
+                        <p class="card-text text-muted small mb-2">Liste des étudiants</p>
+                        <a href="{% url 'gestion_academique:etudiant_list' %}" class="btn btn-primary btn-sm mt-auto">Voir</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-person-fill-gear" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Enseignants</h5>
+                        <p class="card-text text-muted small mb-2">Profils enseignants</p>
+                        <a href="{% url 'gestion_academique:enseignant_list' %}" class="btn btn-primary btn-sm mt-auto">Voir</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-book-fill" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Matières</h5>
+                        <p class="card-text text-muted small mb-2">Matières département</p>
+                        <a href="{% url 'structure_pedagogique:matiere_list' %}" class="btn btn-primary btn-sm mt-auto">Voir</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-clipboard-check-fill" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Validation</h5>
+                        <p class="card-text text-muted small mb-2">Valider les notes</p>
+                        <a href="{% url 'gestion_notes:validation_notes_list' %}" class="btn btn-primary btn-sm mt-auto">Accéder</a>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-6">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-book-half" style="font-size: 3rem; color: var(--primary-color);"></i>
-                        <h5 class="card-title mt-3">Mes Matières</h5>
-                        <p class="card-text text-muted">Consulter mes enseignements</p>
-                        <a href="#" class="btn btn-primary">Accéder</a>
+            <!-- NOUVEAU : Card Import Étudiants pour Chef -->
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-file-earmark-excel-fill" style="font-size: 2.5rem; color: #28a745;"></i>
+                        <h5 class="card-title mt-2 mb-1">Import Étudiants</h5>
+                        <p class="card-text text-muted small mb-2">Inscrivez plusieurs étudiants</p>
+                        <span class="badge bg-info mb-2">{{ user.profile.departement.code }}</span>
+                        <a href="{% url 'gestion_academique:import_etudiants' %}" class="btn btn-success btn-sm mt-auto">Accéder</a>
                     </div>
                 </div>
             </div>
 
-        {% else %}
-            <!-- Dashboard Étudiant -->
-            <div class="col-md-6">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-journal-text" style="font-size: 3rem; color: var(--primary-color);"></i>
-                        <h5 class="card-title mt-3">Mes Notes</h5>
-                        <p class="card-text text-muted">Consulter mes résultats</p>
-                        <a href="#" class="btn btn-primary">Accéder</a>
+            <!-- Carte UE -->
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-bookmark-check-fill" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Unités d'Enseignement</h5>
+                        <p class="card-text text-muted small mb-2">Gérer les UE</p>
+                        <a href="{% url 'gestion_notes:ue_list' %}" class="btn btn-primary btn-sm mt-auto">Voir</a>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-6">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-download" style="font-size: 3rem; color: var(--primary-color);"></i>
-                        <h5 class="card-title mt-3">Mes Bulletins</h5>
-                        <p class="card-text text-muted">Télécharger mes bulletins</p>
-                        <a href="#" class="btn btn-primary">Accéder</a>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-archive-fill" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Archives</h5>
+                        <p class="card-text text-muted small mb-2">Étudiants archivés (mon département)</p>
+                        <a href="{% url 'gestion_academique:archives_list' %}" class="btn btn-primary btn-sm mt-auto">Voir</a>
                     </div>
                 </div>
             </div>
-        {% endif %}
-    </div>
+        
+        </div>
 
-    <div class="row mt-5">
+    <!-- ============================================================ -->
+    <!-- DASHBOARD ENSEIGNANT                                         -->
+    <!-- ============================================================ -->
+    {% elif user.profile.is_enseignant %}
+
+        <!-- Statistiques -->
+        <div class="row g-3 g-md-4 mb-3 mb-md-4">
+            <div class="col-6 col-md-6">
+                <div class="card text-center border-0 shadow-sm">
+                    <div class="card-body p-2 p-md-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width:50px;height:50px;background:#f8d7da;">
+                            <i class="bi bi-book-fill" style="font-size:1.5rem;color:#721c16;"></i>
+                        </div>
+                        <h3 class="fw-bold mb-0" style="color:var(--primary-color); font-size: 1.5rem;">{{ nb_matieres }}</h3>
+                        <p class="text-muted mb-0 small">Mes Matières</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-6">
+                <div class="card text-center border-0 shadow-sm">
+                    <div class="card-body p-2 p-md-3">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-2" style="width:50px;height:50px;background:#d4edda;">
+                            <i class="bi bi-award-fill" style="font-size:1.5rem;color:#28a745;"></i>
+                        </div>
+                        <h3 class="fw-bold mb-0" style="color:var(--primary-color); font-size: 1.5rem;">
+                            {% if matieres %}
+                                {% for mat in matieres %}{{ mat.credits }}{% if not forloop.last %} + {% endif %}{% endfor %}
+                            {% else %}0{% endif %}
+                        </h3>
+                        <p class="text-muted mb-0 small">Crédits Total</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mes Matières -->
+        <div class="row g-3 g-md-4 mb-3 mb-md-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-book-fill me-2"></i>Mes Matières
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th class="d-none d-md-table-cell">Code</th>
+                                        <th>Matière</th>
+                                        <th class="d-none d-lg-table-cell">Niveau</th>
+                                        <th class="d-none d-lg-table-cell">Semestre</th>
+                                        <th class="d-none d-md-table-cell text-center">Coef</th>
+                                        <th class="d-none d-md-table-cell text-center">Crédits</th>
+                                        <th class="text-center">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for mat in matieres %}
+                                    <tr>
+                                        <td class="d-none d-md-table-cell"><strong>{{ mat.code }}</strong></td>
+                                        <td>
+                                            {{ mat.nom }}
+                                            <span class="d-md-none d-block small text-muted">{{ mat.code }} - {{ mat.niveau.code }}/{{ mat.semestre.code }}</span>
+                                        </td>
+                                        <td class="d-none d-lg-table-cell">{{ mat.niveau.code }}</td>
+                                        <td class="d-none d-lg-table-cell">{{ mat.semestre.code }}</td>
+                                        <td class="d-none d-md-table-cell text-center">{{ mat.coefficient }}</td>
+                                        <td class="d-none d-md-table-cell text-center">{{ mat.credits }}</td>
+                                        <td class="text-center">
+                                            <a href="{% url 'gestion_notes:saisie_notes' %}?matiere={{ mat.id }}" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-clipboard-check me-1 d-none d-md-inline"></i>
+                                                <span class="d-none d-md-inline">Saisie</span>
+                                                <i class="bi bi-clipboard-check d-md-none"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr><td colspan="7" class="text-center py-4 text-muted">Aucune matière assignée</td></tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- ============================================================ -->
+    <!-- DASHBOARD ÉTUDIANT                                           -->
+    <!-- ============================================================ -->
+    {% elif user.profile.is_etudiant %}
+
+        <!-- Info étudiant -->
+        <div class="row mb-3 mb-md-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body p-3">
+                        <div class="row align-items-center">
+                            <div class="col-12 col-md-3 text-center mb-3 mb-md-0">
+                                <div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width:80px;height:80px;background:var(--primary-color);color:#fff;">
+                                    <i class="bi bi-person-fill" style="font-size:2.5rem;"></i>
+                                </div>
+                            </div>
+                            <div class="col-12 col-md-9">
+                                {% if etudiant %}
+                                    <h4 class="fw-bold h5 h-md-4" style="color:var(--primary-color);">{{ etudiant.get_full_name }}</h4>
+                                    <p class="mb-1 small"><strong>Matricule :</strong> {{ etudiant.matricule }}</p>
+                                    <p class="mb-1 small"><strong>Département :</strong> {{ etudiant.departement.nom }}</p>
+                                    <p class="mb-0 small"><strong>Niveau :</strong> {{ etudiant.niveau.nom }}</p>
+                                {% else %}
+                                    <p class="text-muted mb-0">Informations non disponibles</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="row g-3 g-md-4">
+            <div class="col-12 col-md-6">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-journal-text" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Mes Notes</h5>
+                        <p class="card-text text-muted small mb-2">Consulter mes notes</p>
+                        <a href="{% url 'gestion_notes:etudiant_notes' %}" class="btn btn-primary btn-sm mt-auto">Voir mes notes</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-6">
+                <div class="card text-center h-100">
+                    <div class="card-body d-flex flex-column justify-content-center p-3">
+                        <i class="bi bi-file-earmark-text-fill" style="font-size: 2.5rem; color: var(--primary-color);"></i>
+                        <h5 class="card-title mt-2 mb-1">Mon Relevé</h5>
+                        <p class="card-text text-muted small mb-2">Consulter mon relevé</p>
+                        <a href="{% url 'gestion_notes:etudiant_releve' %}" class="btn btn-primary btn-sm mt-auto">Voir mon relevé</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- ===== INFO COMMUNE EN BAS ===== -->
+    <div class="row mt-4 mt-md-5">
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
                     <i class="bi bi-info-circle me-2"></i>Informations
                 </div>
-                <div class="card-body">
-                    <p class="mb-2"><strong>Année académique :</strong> 2025-2026</p>
-                    <p class="mb-2"><strong>Semestre en cours :</strong> S1 (Semestre 1)</p>
-                    <p class="mb-0"><strong>Statut du système :</strong> <span class="badge bg-success">Opérationnel</span></p>
+                <div class="card-body p-3">
+                    <p class="mb-2 small"><strong>Année académique :</strong> 2024-2025</p>
+                    <p class="mb-2 small"><strong>Semestre en cours :</strong> S1 (Semestre 1)</p>
+                    <p class="mb-0 small"><strong>Statut :</strong> <span class="badge bg-success">Opérationnel</span></p>
                 </div>
             </div>
         </div>

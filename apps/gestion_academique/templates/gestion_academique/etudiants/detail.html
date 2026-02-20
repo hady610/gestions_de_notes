@@ -1,0 +1,65 @@
+{% extends 'gestion_academique/base_admin.html' %}
+{% load static %}
+{% block title %}{{ etudiant.get_full_name }} - UGANC{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 text-primary-custom fw-bold"><i class="bi bi-person-circle me-2"></i>Fiche Étudiant</h1>
+    <div>
+        <a href="{% url 'gestion_academique:etudiant_update' etudiant.pk %}" class="btn btn-warning me-2">
+            <i class="bi bi-pencil me-2"></i>Modifier
+        </a>
+        <a href="{% url 'gestion_academique:etudiant_list' %}" class="btn btn-outline-secondary">Retour</a>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card text-center">
+            <div class="card-body">
+                {% if etudiant.photo %}
+                    <img src="{{ etudiant.photo.url }}" class="rounded-circle mb-3" style="width:150px;height:150px;object-fit:cover;">
+                {% else %}
+                    <div class="avatar mx-auto mb-3" style="width:150px;height:150px;font-size:4rem;">
+                        {{ etudiant.nom|first }}{{ etudiant.prenom|first }}
+                    </div>
+                {% endif %}
+                <h4>{{ etudiant.get_full_name }}</h4>
+                <p class="text-muted">{{ etudiant.matricule }}</p>
+                <span class="badge bg-primary fs-6">{{ etudiant.departement.code }} - {{ etudiant.niveau.code }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">Informations Personnelles</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6"><strong>Nom :</strong> {{ etudiant.nom }}</div>
+                    <div class="col-md-6"><strong>Prénom :</strong> {{ etudiant.prenom }}</div>
+                    <div class="col-md-6"><strong>Date de naissance :</strong> {{ etudiant.date_naissance|date:"d/m/Y" }}</div>
+                    <div class="col-md-6"><strong>Lieu :</strong> {{ etudiant.lieu_naissance }}</div>
+                    <div class="col-md-6"><strong>Sexe :</strong> {% if etudiant.sexe == 'M' %}Masculin{% else %}Féminin{% endif %}</div>
+                    <div class="col-md-6"><strong>Âge :</strong> {{ etudiant.get_age }} ans</div>
+                </div>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header">Informations Académiques</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6"><strong>Département :</strong> {{ etudiant.departement.nom }}</div>
+                    <div class="col-md-6"><strong>Niveau :</strong> {{ etudiant.niveau.nom }}</div>
+                    <div class="col-md-12"><strong>Année :</strong> {{ etudiant.annee_academique.annee }}</div>
+                </div>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header">Coordonnées</div>
+            <div class="card-body">
+                <p><i class="bi bi-envelope me-2"></i>{{ etudiant.email|default:"—" }}</p>
+                <p><i class="bi bi-telephone me-2"></i>{{ etudiant.telephone|default:"—" }}</p>
+                <p><i class="bi bi-geo-alt me-2"></i>{{ etudiant.adresse|default:"—" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

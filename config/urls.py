@@ -5,13 +5,13 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.generic import TemplateView
+from apps.authentication import views as auth_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     
-    # Page d'accueil
-    path('', TemplateView.as_view(template_name='home.html'), name='home'),
+    # Page d'accueil - Vue avec contexte selon le rôle
+    path('', auth_views.home_view, name='home'),
     
     # Modules
     path('auth/', include('apps.authentication.urls')),

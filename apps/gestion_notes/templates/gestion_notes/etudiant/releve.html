@@ -1,0 +1,130 @@
+{% extends 'gestion_notes/base_notes.html' %}
+{% load static %}
+{% block title %}Mon Relevé de Notes{% endblock %}
+{% block main_content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h2 fw-bold" style="color:var(--primary-color);"><i class="bi bi-file-earmark-text me-2"></i>Mon Relevé de Notes</h1>
+    </div>
+    <a href="{% url 'gestion_notes:etudiant_notes' %}" class="btn btn-outline-secondary">Retour</a>
+</div>
+
+<!-- En-tête relevé -->
+<div class="card mb-4">
+    <div class="card-header text-center" style="background:var(--primary-color);color:#fff;">
+        <h4 class="mb-0">RELEVÉ DE NOTES OFFICIEL</h4>
+        <small>UGANC - Université de Guinée</small>
+    </div>
+    <div class="card-body">
+        <div class="row text-center">
+            <div class="col-md-4">
+                <p class="mb-1"><strong>Nom :</strong> {{ etudiant.nom }}</p>
+                <p class="mb-0"><strong>Prénom :</strong> {{ etudiant.prenom }}</p>
+            </div>
+            <div class="col-md-4">
+                <p class="mb-1"><strong>Matricule :</strong> {{ etudiant.matricule }}</p>
+                <p class="mb-0"><strong>Département :</strong> {{ etudiant.departement.nom }}</p>
+            </div>
+            <div class="col-md-4">
+                <p class="mb-1"><strong>Niveau :</strong> {{ etudiant.niveau.nom }}</p>
+                <p class="mb-0"><strong>Année :</strong> {{ etudiant.annee_academique.annee }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- UE Résumé -->
+{% if ues_data %}
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-layers me-2"></i>Résumé Unités d'Enseignement</div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Code UE</th>
+                    <th>Nom UE</th>
+                    <th>Semestre</th>
+                    <th class="text-center">Moyenne</th>
+                    <th class="text-center">Résultat</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in ues_data %}
+                <tr>
+                    <td><strong>{{ item.ue.code }}</strong></td>
+                    <td>{{ item.ue.nom }}</td>
+                    <td>{{ item.ue.semestre.code }}</td>
+                    <td class="text-center"><strong>{{ item.moyenne }}/10</strong></td>
+                    <td class="text-center">
+                        {% if item.resultat == 'admis' %}
+                            <span class="badge bg-success">Admis</span>
+                        {% elif item.resultat == 'session' %}
+                            <span class="badge bg-warning text-dark">Session</span>
+                        {% else %}
+                            <span class="badge bg-danger">Dette</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- Notes détail -->
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-list-ul me-2"></i>Détail des Notes (Validées uniquement)</div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Matière</th>
+                    <th>Semestre</th>
+                    <th class="text-center">Note 1</th>
+                    <th class="text-center">Note 2</th>
+                    <th class="text-center">Note 3</th>
+                    <th class="text-center">Moyenne</th>
+                    <th class="text-center">Résultat</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for note in notes %}
+                <tr>
+                    <td><strong>{{ note.matiere.code }}</strong></td>
+                    <td>{{ note.matiere.nom }}</td>
+                    <td>{{ note.matiere.semestre.code }}</td>
+                    <td class="text-center">{{ note.note1|default:"—" }}</td>
+                    <td class="text-center">{{ note.note2|default:"—" }}</td>
+                    <td class="text-center">{{ note.note3|default:"—" }}</td>
+                    <td class="text-center"><strong>{{ note.moyenne }}</strong></td>
+                    <td class="text-center">
+                        {% if note.moyenne >= 5 %}
+                            <span class="badge bg-success">Admis</span>
+                        {% elif note.moyenne >= 3 %}
+                            <span class="badge bg-warning text-dark">Session</span>
+                        {% else %}
+                            <span class="badge bg-danger">Dette</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="8" class="text-center py-4 text-muted">Aucune note validée</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Note bas de page -->
+<div class="card">
+    <div class="card-body text-center text-muted">
+        <small>
+            <i class="bi bi-lock me-1"></i> Ce relevé ne peut pas être exporté par l'étudiant. 
+            Pour un export PDF officiel, contactez le Doyen de la faculté.<br>
+            <strong>Légende :</strong> Admis (≥5) | Session (≥3) | Dette (&lt;3) | Notes sur 10
+        </small>
+    </div>
+</div>
+{% endblock %}

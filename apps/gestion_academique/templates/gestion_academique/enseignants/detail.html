@@ -1,0 +1,51 @@
+{% extends 'gestion_academique/base_admin.html' %}
+{% load static %}
+{% block title %}{{ enseignant.get_full_name }} - UGANC{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 text-primary-custom fw-bold"><i class="bi bi-person-badge me-2"></i>Fiche Enseignant</h1>
+    <div>
+        <a href="{% url 'gestion_academique:enseignant_update' enseignant.pk %}" class="btn btn-warning me-2">Modifier</a>
+        <a href="{% url 'gestion_academique:enseignant_list' %}" class="btn btn-outline-secondary">Retour</a>
+    </div>
+</div>
+<div class="row">
+    <div class="col-lg-4">
+        <div class="card text-center">
+            <div class="card-body">
+                {% if enseignant.photo %}
+                    <img src="{{ enseignant.photo.url }}" class="rounded-circle mb-3" style="width:150px;height:150px;object-fit:cover;">
+                {% else %}
+                    <div class="avatar mx-auto mb-3" style="width:150px;height:150px;font-size:4rem;">
+                        {{ enseignant.nom|first }}{{ enseignant.prenom|first }}
+                    </div>
+                {% endif %}
+                <h4>{{ enseignant.get_full_name }}</h4>
+                <p class="text-muted">{{ enseignant.code }}</p>
+                <span class="badge bg-warning fs-6">{{ enseignant.get_grade_display }}</span>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">Informations Professionnelles</div>
+            <div class="card-body">
+                <p><strong>Grade :</strong> {{ enseignant.get_grade_display }}</p>
+                <p><strong>Spécialité :</strong> {{ enseignant.specialite }}</p>
+                <p><strong>Départements :</strong>
+                    {% for dept in enseignant.departements.all %}
+                        <span class="badge bg-primary">{{ dept.nom }}</span>
+                    {% endfor %}
+                </p>
+            </div>
+        </div>
+        <div class="card mt-3">
+            <div class="card-header">Coordonnées</div>
+            <div class="card-body">
+                <p><i class="bi bi-envelope me-2"></i>{{ enseignant.email }}</p>
+                <p><i class="bi bi-telephone me-2"></i>{{ enseignant.telephone|default:"—" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
