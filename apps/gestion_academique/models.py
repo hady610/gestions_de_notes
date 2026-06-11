@@ -1,10 +1,10 @@
-# gestion_academique/models.py - VERSION ÉTENDUE
+# gestion_academique/models.py - VERSION MODIFIÉE
 """
-MODULE 2 : Gestion Académique - Models ÉTENDU
+MODULE 2 : Gestion Académique - Models MODIFIÉ
 Ajout de :
-- Archivage des étudiants sortants
-- Gestion du passage automatique d'année
-- Historique des notes par année
+- Passage manuel d'étudiants par la direction
+- Règle des 4 dettes maximum pour passer
+- Méthodes de calcul des dettes
 """
 from django.db import models
 from django.core.validators import RegexValidator
@@ -123,12 +123,40 @@ class Etudiant(models.Model):
         verbose_name="Année académique"
     )
     
-    # NOUVEAU : Statut de l'étudiant
+    # Statut de l'étudiant
     statut = models.CharField(
         max_length=20,
         choices=STATUT_CHOICES,
         default='actif',
         verbose_name="Statut"
+    )
+    
+    # ⭐ NOUVEAU : Passage manuel par la direction
+    passage_manuel = models.BooleanField(
+        default=False,
+        verbose_name="Passage manuel",
+        help_text="Cocher si cet étudiant a été passé manuellement par la direction (ignore la règle des 4 dettes)"
+    )
+    
+    passage_manuel_par = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='passages_manuels_effectues',
+        verbose_name="Passage effectué par"
+    )
+    
+    passage_manuel_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name="Date du passage manuel"
+    )
+    
+    passage_manuel_justification = models.TextField(
+        blank=True,
+        verbose_name="Justification du passage manuel",
+        help_text="Raison pour laquelle la direction a forcé le passage"
     )
     
     email = models.EmailField(blank=True, verbose_name="Email")
@@ -159,6 +187,46 @@ class Etudiant(models.Model):
            (today.month == self.date_naissance.month and today.day < self.date_naissance.day):
             age -= 1
         return age
+    
+    # ⭐ NOUVELLE MÉTHODE
+    def compter_ues_non_validees(self):
+        """
+        Compte le nombre d'UE non validées pour cet étudiant
+        Returns: int - Nombre d'UE non validées
+        """
+        from apps.gestion_notes.models import UniteEnseignement
+        
+        # Récupérer toutes les UE du niveau actuel et des niveaux précédents
+        ues = UniteEnseignement.objects.filter(
+            semestre__niveau__ordre__lte=self.niveau.ordre,
+            matieres__departements=self.departement
+        ).distinct()
+        
+        nb_ues_non_validees = 0
+        for ue in ues:
+            if not ue.est_valide_ue(self):
+                nb_ues_non_validees += 1
+        
+        return nb_ues_non_validees
+    
+    # ⭐ NOUVELLE MÉTHODE
+    def peut_passer_niveau_superieur(self):
+        """
+        Vérifie si l'étudiant peut passer au niveau supérieur
+        RÈGLE: Moins de 4 UE non validées OU passage manuel
+        Returns: tuple (bool, str) - (Peut passer, Raison)
+        """
+        # Si passage manuel, passe automatiquement
+        if self.passage_manuel:
+            return (True, "Passage manuel par la direction")
+        
+        # Compter les UE non validées
+        nb_dettes = self.compter_ues_non_validees()
+        
+        if nb_dettes < 4:
+            return (True, f"{nb_dettes} dette(s) - OK pour passage")
+        else:
+            return (False, f"{nb_dettes} dette(s) - Redoublement requis")
 
 
 class EtudiantArchive(models.Model):

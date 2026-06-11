@@ -1,7 +1,7 @@
-# bulletins/views.py
-# bulletins/views.py
+# bulletins/views.py - VERSION AVEC HAUTEUR DE CELLULES AUGMENTÉE
 """
 MODULE 5 : Bulletins - Génération PDF des relevés de notes
+AJUSTEMENT : Hauteur des cellules augmentée de 0.1cm (1mm)
 """
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -14,7 +14,7 @@ import os
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
-from reportlab.lib.units import cm
+from reportlab.lib.units import cm, mm
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER, TA_LEFT, TA_RIGHT
@@ -210,7 +210,7 @@ def generer_pdf_bulletin(etudiant, semestre1, data_s1, semestre2, data_s2):
     
     # ===== EN-TÊTE =====
     elements.append(creer_header())
-    elements.append(Spacer(1, 0.3*cm))
+    elements.append(Spacer(1, 0.2*cm))
     
     # ===== TITRE =====
     titre_style = ParagraphStyle(
@@ -219,24 +219,24 @@ def generer_pdf_bulletin(etudiant, semestre1, data_s1, semestre2, data_s2):
         fontSize=16,
         textColor=colors.white,
         alignment=TA_CENTER,
-        spaceAfter=10,
+        spaceAfter=6,
         backColor=colors.grey
     )
     titre = Paragraph("RELEVÉ DE NOTES", titre_style)
     elements.append(titre)
-    elements.append(Spacer(1, 0.3*cm))
+    elements.append(Spacer(1, 0.2*cm))
     
     # ===== INFOS ÉTUDIANT =====
     elements.append(creer_infos_etudiant(etudiant))
-    elements.append(Spacer(1, 0.5*cm))
+    elements.append(Spacer(1, 0.3*cm))
     
     # ===== SEMESTRE 1 =====
     elements.append(creer_tableau_semestre(semestre1, data_s1))
-    elements.append(Spacer(1, 0.5*cm))
+    elements.append(Spacer(1, 0.3*cm))
     
     # ===== SEMESTRE 2 =====
     elements.append(creer_tableau_semestre(semestre2, data_s2))
-    elements.append(Spacer(1, 0.5*cm))
+    elements.append(Spacer(1, 1*cm))  # ⭐ AUGMENTÉ de 0.3cm à 1cm pour faire descendre le footer
     
     # ===== FOOTER =====
     elements.append(creer_footer())
@@ -248,7 +248,7 @@ def generer_pdf_bulletin(etudiant, semestre1, data_s1, semestre2, data_s2):
     buffer.close()
     
     return pdf_content
-# À AJOUTER dans apps/bulletins/views.py
+
 
 @login_required
 def bulletin_detail(request, etudiant_id):
@@ -294,11 +294,11 @@ def bulletin_detail(request, etudiant_id):
     
     return render(request, 'bulletins/detail.html', context)
 
+
 def creer_header():
     """Crée l'en-tête du bulletin avec logos"""
     
     # Chemins des logos
-# Chemins des logos
     logo_uganc_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'logo_uganc.jpg')
     logo_centre_path = os.path.join(settings.BASE_DIR, 'static', 'images', 'logo_centre_informatique.jpg')
     
@@ -310,7 +310,7 @@ def creer_header():
     data = [[
         Image(logo_uganc_path, width=3*cm, height=2*cm) if os.path.exists(logo_uganc_path) else '',
         Paragraph("<b>UNIVERSITÉ GAMAL ABDEL<br/>NASSER DE CONAKRY</b><br/>B.P : 1147<br/>Conakry/ R. Guinée", style_center),
-        Paragraph("<b>CENTRE INFORMATIQUE</b><br/>Tél : +224 624 08 45 01<br/>+224 657 99 43 57<br/>ibrahima.k.toure@ci.edu.gn", style_center),
+        Paragraph("<b>LA FACULTÉ POLYTECHNIQUE</b><br/>Tél : +224 624 08 45 01<br/>+224 657 99 43 57<br/>ibrahima.k.toure@ci.edu.gn", style_center),
         Image(logo_centre_path, width=3*cm, height=2*cm) if os.path.exists(logo_centre_path) else '',
     ]]
     
@@ -343,7 +343,10 @@ def creer_infos_etudiant(etudiant):
 
 
 def creer_tableau_semestre(semestre, donnees):
-    """Crée le tableau des notes pour un semestre avec fusion de cellules pour les UE"""
+    """
+    Crée le tableau des notes pour un semestre avec fusion de cellules pour les UE
+    ⭐ MODIFIÉ : Hauteur des cellules augmentée de 0.1cm (1mm)
+    """
     
     styles = getSampleStyleSheet()
     style_center = ParagraphStyle('center', parent=styles['Normal'], alignment=TA_CENTER, fontSize=10, fontName='Helvetica-Bold')
@@ -363,10 +366,14 @@ def creer_tableau_semestre(semestre, donnees):
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
         ('ALIGN', (1, 0), (-1, -1), 'CENTER'),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),  # Alignement vertical au milieu
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, -1), 9),
-        ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+        # ⭐⭐ PADDING NORMAL (hauteur contrôlée par rowHeights) ⭐⭐
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+        ('TOPPADDING', (0, 0), (-1, -1), 2),
+        ('LEFTPADDING', (0, 0), (-1, -1), 3),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 3),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
     ]
     
@@ -445,13 +452,20 @@ def creer_tableau_semestre(semestre, donnees):
         ])
         row_index += 1
     
-    # Créer le tableau
-    table = Table(data, colWidths=[8*cm, 3*cm, 3.5*cm, 3.5*cm])
+    # Créer le tableau avec hauteur de ligne augmentée
+    # ⭐ Chaque ligne fait environ 0.5cm de base + 0.1cm = 0.6cm
+    nombre_lignes = len(data)
+    hauteur_base = 0.5*cm  # Hauteur de base
+    hauteur_ajout = 0.1*cm  # ⭐ Augmentation de 0.1cm (1mm) par ligne
+    row_heights = [hauteur_base + hauteur_ajout] * nombre_lignes
+    
+    table = Table(data, colWidths=[8*cm, 3*cm, 3.5*cm, 3.5*cm], rowHeights=row_heights)
     
     # Appliquer le style avec les fusions
     table.setStyle(TableStyle(table_style_commands))
     
     return Table([[titre], [table]])
+
 
 def creer_footer():
     """Crée le footer avec date et signatures"""
@@ -463,8 +477,8 @@ def creer_footer():
     date_aujourdhui = datetime.now().strftime("%d %B %Y")
     
     footer_data = [[
-        Paragraph(f"Le DGA/Etudes<br/><br/><br/><b>Dr. Mohamed CONTE</b>", style_left),
-        Paragraph(f"Fait à Conakry, le {date_aujourdhui}<br/>Le Directeur Général<br/><br/><br/><b>Dr. Ibrahima Kalil TOURE</b>", style_right),
+        Paragraph(f"<br/><br/>Le DGA/Etudes<br/><br/><br/><br/><b>Dr. Mohamed CONTE</b>", style_left),  # ⭐ 2 lignes vides + titre + 4 lignes = aligné avec Directeur
+        Paragraph(f"Fait à Conakry, le {date_aujourdhui}<br/><br/>Le Directeur Général<br/><br/><br/><br/><b>Dr. Ibrahima Kalil TOURE</b>", style_right),  # Date + 2 lignes + titre + 4 lignes
     ]]
     
     table = Table(footer_data, colWidths=[9*cm, 9*cm])

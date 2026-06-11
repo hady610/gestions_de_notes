@@ -397,7 +397,7 @@ print(f"""
 👥 COMPTES CRÉÉS :
 
   🎓 DIRECTION :
-    • admin / admin123
+        • Direction / Direction123
 
   👔 CHEFS DE DÉPARTEMENT :
     • CHEF-NTIC / CHEF-NTIC (Département NTIC)

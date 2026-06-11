@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Passage Manuel{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>🔓 Passage Manuel d'Étudiants</h2>
+                <a href="{% url 'gestion_academique:annee_list' %}" class="btn btn-secondary">
+                    ← Retour aux années
+                </a>
+            </div>
+            
+            <!-- Info année active -->
+            <div class="alert alert-primary">
+                <strong>Année académique active :</strong> {{ annee_active.annee }}
+                <br>
+                <small>Cette fonction permet de faire passer manuellement des étudiants au niveau supérieur, même s'ils ont 4 dettes ou plus.</small>
+            </div>
+            
+            <!-- Statistiques -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card bg-warning text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Étudiants à risque de redoublement</h5>
+                            <h2 class="mb-0">{{ stats.total }}</h2>
+                            <small>4 dettes ou plus</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Passages manuels déjà effectués</h5>
+                            <h2 class="mb-0">{{ stats.passages_manuels_existants }}</h2>
+                            <small>Cette année</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filtres -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Département</label>
+                            <select name="departement" class="form-select">
+                                <option value="">Tous les départements</option>
+                                {% for dept in departements %}
+                                <option value="{{ dept.id }}" {% if filters.departement == dept.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ dept.nom }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Niveau</label>
+                            <select name="niveau" class="form-select">
+                                <option value="">Tous les niveaux</option>
+                                {% for niveau in niveaux %}
+                                <option value="{{ niveau.id }}" {% if filters.niveau == niveau.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ niveau.nom }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Affichage</label>
+                            <select name="tous" class="form-select">
+                                <option value="">Seulement redoublants (4+ dettes)</option>
+                                <option value="oui" {% if filters.tous %}selected{% endif %}>Tous les étudiants</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                🔍 Filtrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Liste des étudiants -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        Liste des étudiants 
+                        {% if not filters.tous %}
+                            <span class="badge bg-warning">À risque de redoublement</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if etudiants_avec_dettes %}
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Matricule</th>
+                                    <th>Nom complet</th>
+                                    <th>Département</th>
+                                    <th>Niveau</th>
+                                    <th>Dettes</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in etudiants_avec_dettes %}
+                                <tr>
+                                    <td>{{ item.etudiant.matricule }}</td>
+                                    <td>
+                                        <strong>{{ item.etudiant.get_full_name }}</strong>
+                                        {% if item.etudiant.passage_manuel %}
+                                        <br><span class="badge bg-success">Passage manuel</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ item.etudiant.departement.code }}</td>
+                                    <td>{{ item.etudiant.niveau.code }}</td>
+                                    <td>
+                                        <span class="badge {% if item.nb_dettes >= 4 %}bg-danger{% elif item.nb_dettes >= 2 %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                            {{ item.nb_dettes }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if item.etudiant.passage_manuel %}
+                                            <span class="badge bg-success">✅ Passera</span>
+                                        {% elif item.peut_passer %}
+                                            <span class="badge bg-success">✅ Passera</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">❌ Redouble</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.etudiant.passage_manuel %}
+                                            <button type="button" class="btn btn-sm btn-warning" onclick="openAnnulerModal{{ item.etudiant.id }}()">
+                                                ↩️ Annuler
+                                            </button>
+                                        {% elif not item.peut_passer %}
+                                            <button type="button" class="btn btn-sm btn-success" onclick="openPasserModal{{ item.etudiant.id }}()">
+                                                🔓 Passer
+                                            </button>
+                                        {% else %}
+                                            <span class="text-muted small">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                
+                                <!-- Modal Passage Manuel -->
+                                {% if not item.peut_passer and not item.etudiant.passage_manuel %}
+                                <script>
+                                function openPasserModal{{ item.etudiant.id }}() {
+                                    var myModal = new bootstrap.Modal(document.getElementById('passerModal{{ item.etudiant.id }}'));
+                                    myModal.show();
+                                }
+                                </script>
+                                {% endif %}
+                                
+                                <!-- Modal Annulation -->
+                                {% if item.etudiant.passage_manuel %}
+                                <script>
+                                function openAnnulerModal{{ item.etudiant.id }}() {
+                                    var myModal = new bootstrap.Modal(document.getElementById('annulerModal{{ item.etudiant.id }}'));
+                                    myModal.show();
+                                }
+                                </script>
+                                {% endif %}
+                                
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">
+                            {% if filters.tous %}
+                                Aucun étudiant trouvé.
+                            {% else %}
+                                ✅ Aucun étudiant en situation de redoublement.
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TOUS LES MODALS EN BAS -->
+{% for item in etudiants_avec_dettes %}
+    <!-- Modal Passage Manuel -->
+    {% if not item.peut_passer and not item.etudiant.passage_manuel %}
+    <div class="modal fade" id="passerModal{{ item.etudiant.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" action="{% url 'gestion_academique:passage_manuel_executer' item.etudiant.id %}">
+                    {% csrf_token %}
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title">Passage manuel</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Étudiant :</strong> {{ item.etudiant.get_full_name }}</p>
+                        <p><strong>Matricule :</strong> {{ item.etudiant.matricule }}</p>
+                        <p><strong>Niveau :</strong> {{ item.etudiant.niveau.code }}</p>
+                        <p><strong>Dettes :</strong> <span class="badge bg-danger">{{ item.nb_dettes }} UE</span></p>
+                        <hr>
+                        <div class="mb-3">
+                            <label class="form-label"><strong class="text-danger">* Justification obligatoire</strong></label>
+                            <textarea name="justification" class="form-control" rows="4" required placeholder="Expliquez pourquoi..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-success">✅ Confirmer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Modal Annulation -->
+    {% if item.etudiant.passage_manuel %}
+    <div class="modal fade" id="annulerModal{{ item.etudiant.id }}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">Annuler le passage manuel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p><strong>Étudiant :</strong> {{ item.etudiant.get_full_name }}</p>
+                    <p><strong>Date :</strong> {{ item.etudiant.passage_manuel_date|date:"d/m/Y H:i" }}</p>
+                    <p><strong>Par :</strong> {{ item.etudiant.passage_manuel_par.get_full_name }}</p>
+                    <p><strong>Justification :</strong> {{ item.etudiant.passage_manuel_justification }}</p>
+                    <hr>
+                    <p class="text-danger">⚠️ L'étudiant sera remis au niveau précédent.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <form method="post" action="{% url 'gestion_academique:passage_manuel_annuler' item.etudiant.id %}" style="display:inline;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-warning">Confirmer l'annulation</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
+
+{% endblock %}

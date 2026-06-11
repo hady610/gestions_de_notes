@@ -1,7 +1,7 @@
-# gestion_academique/urls.py - ÉTENDU
+# gestion_academique/urls.py - VERSION CORRIGÉE
 """
 URLs pour la gestion académique étendue
-Inclut: années académiques, passage d'année, archives
+Inclut: années académiques, passage d'année, passage manuel, archives
 """
 from django.urls import path
 from . import views
@@ -23,17 +23,22 @@ urlpatterns = [
     path('niveaux/<int:pk>/modifier/', views.niveau_update, name='niveau_update'),
     path('niveaux/<int:pk>/supprimer/', views.niveau_delete, name='niveau_delete'),
     
-    # ==================== ANNÉES ACADÉMIQUES (NOUVEAU) ====================
+    # ==================== ANNÉES ACADÉMIQUES ====================
     path('annees/', views_annee.annee_list, name='annee_list'),
     path('annees/creer/', views_annee.annee_create, name='annee_create'),
     path('annees/<int:pk>/modifier/', views_annee.annee_update, name='annee_update'),
     path('annees/<int:pk>/supprimer/', views_annee.annee_delete, name='annee_delete'),
     
-    # ==================== PASSAGE D'ANNÉE (NOUVEAU) ====================
+    # ==================== PASSAGE D'ANNÉE AUTOMATIQUE ====================
     path('passage-annee/', views_annee.passage_annee_form, name='passage_annee_form'),
     path('passage-annee/executer/', views_annee.passage_annee_executer, name='passage_annee_executer'),
     
-    # ==================== ARCHIVES (NOUVEAU) ====================
+    # ⭐⭐⭐ PASSAGE MANUEL (NOUVEAU) ⭐⭐⭐
+    path('passage-manuel/', views_annee.passage_manuel_liste, name='passage_manuel_liste'),
+    path('passage-manuel/<int:etudiant_id>/executer/', views_annee.passage_manuel_executer, name='passage_manuel_executer'),
+    path('passage-manuel/<int:etudiant_id>/annuler/', views_annee.passage_manuel_annuler, name='passage_manuel_annuler'),
+    path('passage-manuel/historique/', views_annee.passage_manuel_historique, name='passage_manuel_historique'),
+    # ==================== ARCHIVES ====================
     path('archives/', views_annee.archives_list, name='archives_list'),
     path('archives/<int:pk>/', views_annee.archive_detail, name='archive_detail'),
     path('archives/verifier-maj/', views_annee.archives_verifier_maj, name='archives_verifier_maj'),
@@ -52,6 +57,7 @@ urlpatterns = [
     path('enseignants/<int:pk>/modifier/', views.enseignant_update, name='enseignant_update'),
     path('enseignants/<int:pk>/supprimer/', views.enseignant_delete, name='enseignant_delete'),
 
+    # ==================== IMPORT ====================
     path('import/etudiants/', views_import.import_etudiants_page, name='import_etudiants'),
     path('import/modele-excel/', views_import.telecharger_modele_excel, name='telecharger_modele_excel'),
 ]

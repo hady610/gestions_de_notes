@@ -5,7 +5,7 @@
 
 /* ===== VARIABLES CSS ===== */
 :root {
-    --primary-color: #1a4d2e;
+    --primary-color: #800020;
     --secondary-color: #d4af37;
     --success-color: #198754;
     --danger-color: #dc3545;
@@ -44,6 +44,58 @@ img {
     .container-fluid {
         padding-left: 20px;
         padding-right: 20px;
+
+/* ===== THEME OVERRIDES: uniformiser les couleurs Bootstrap en Bordeaux ===== */
+/* Force la couleur principale (bordeaux) sur les utilitaires courants pour homogénéité */
+.bg-success, .bg-info, .bg-primary {
+    background-color: var(--primary-color) !important;
+    color: #ffffff !important;
+}
+
+.btn-success, .btn-info, .btn-primary {
+    background-color: var(--primary-color) !important;
+    border-color: rgba(0,0,0,0.12) !important;
+    color: #ffffff !important;
+}
+.btn-success:hover, .btn-info:hover, .btn-primary:hover,
+.btn-success:focus, .btn-info:focus, .btn-primary:focus {
+    filter: brightness(0.95);
+}
+
+.btn-outline-success, .btn-outline-info, .btn-outline-primary,
+.btn-outline-success a, .btn-outline-info a, .btn-outline-primary a {
+    color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+}
+.btn-outline-success:hover, .btn-outline-info:hover, .btn-outline-primary:hover {
+    background-color: var(--primary-color) !important;
+    color: #fff !important;
+}
+
+.alert-success, .alert-info, .alert-primary {
+    background-color: var(--primary-color) !important;
+    color: #fff !important;
+    border-color: rgba(0,0,0,0.05) !important;
+}
+
+.badge.bg-success, .badge.bg-info, .badge.bg-primary {
+    background-color: var(--primary-color) !important;
+    color: #fff !important;
+}
+
+.text-success, .text-info, .text-primary {
+    color: var(--primary-color) !important;
+}
+
+/* Liens et accents */
+a, .link-primary {
+    color: var(--primary-color);
+}
+
+/* Réduire conflits avec alert-danger/warning si nécessaire — conserver contraste */
+.alert-danger { background-color: var(--danger-color) !important; color: #fff !important; }
+.alert-warning { background-color: var(--warning-color) !important; color: #212529 !important; }
+
     }
 }
 
@@ -549,6 +601,6 @@ body {
     }
     
     ::-webkit-scrollbar-thumb:hover {
-        background: #0f2419;
+        background: #3d000f;
     }
 }

@@ -5,13 +5,85 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import HttpResponse
 from django.contrib.auth.models import User
-from datetime import datetime
+from datetime import datetime, date
+import csv
+import re
+import unicodedata
 import openpyxl
 from openpyxl import Workbook
-from io import BytesIO
+from io import BytesIO, StringIO
 
 from .models import Etudiant, Departement, Niveau, AnneeAcademique
 from .forms import ImportEtudiantsForm
+
+
+def normaliser_entete(entete):
+    if entete is None:
+        return ''
+
+    entete = str(entete).strip().lower()
+    entete = unicodedata.normalize('NFKD', entete).encode('ascii', 'ignore').decode('ascii')
+    entete = re.sub(r'[^a-z0-9]+', '_', entete)
+    return entete.strip('_')
+
+
+HEADER_ALIASES = {
+    'matricule': 'matricule',
+    'numero_matricule': 'matricule',
+    'no_matricule': 'matricule',
+    'nom': 'nom',
+    'last_name': 'nom',
+    'surname': 'nom',
+    'prenom': 'prenom',
+    'first_name': 'prenom',
+    'given_name': 'prenom',
+    'date_naissance': 'date_naissance',
+    'date_de_naissance': 'date_naissance',
+    'date_de_naissance': 'date_naissance',
+    'date_naissance': 'date_naissance',
+    'date_de_naissance': 'date_naissance',
+    'naissance': 'date_naissance',
+    'birthday': 'date_naissance',
+    'lieu_naissance': 'lieu_naissance',
+    'lieu_de_naissance': 'lieu_naissance',
+    'lieu': 'lieu_naissance',
+    'sexe': 'sexe',
+    'genre': 'sexe',
+    'email': 'email',
+    'e_mail': 'email',
+    'telephone': 'telephone',
+    'tel': 'telephone',
+    'portable': 'telephone',
+    'phone': 'telephone',
+    'phone_number': 'telephone',
+    'niveau': 'niveau',
+    'code_niveau': 'niveau',
+    'departement': 'departement',
+    'department': 'departement',
+    'code_departement': 'departement',
+    'code_departement': 'departement',
+    'adresse': 'adresse',
+    'address': 'adresse',
+    'adresse_postale': 'adresse',
+}
+
+
+def lire_lignes_fichier(fichier):
+    filename = getattr(fichier, 'name', '')
+    contenu = fichier.read()
+    if isinstance(contenu, str):
+        contenu = contenu.encode('utf-8')
+
+    if filename.lower().endswith('.csv'):
+        texte = contenu.decode('utf-8-sig')
+        return [row for row in csv.reader(StringIO(texte)) if row]
+
+    try:
+        wb = openpyxl.load_workbook(BytesIO(contenu), data_only=True)
+        ws = wb.active
+        return [[cell.value for cell in row] for row in ws.iter_rows(values_only=True)]
+    except Exception as e:
+        raise ValueError(f"Impossible de lire ce fichier Excel : {str(e)}")
 
 
 @login_required
@@ -73,38 +145,46 @@ def traiter_fichier_excel(fichier, annee_academique, departement_limite=None):
     }
     
     try:
-        # Lire le fichier Excel
-        wb = openpyxl.load_workbook(fichier)
-        ws = wb.active
-        
-        # Récupérer l'en-tête (première ligne)
-        headers = [cell.value for cell in ws[1] if cell.value]  # Ignorer les colonnes sans titre
-        
-        # Vérifier les colonnes obligatoires
-        colonnes_requises = ['matricule', 'nom', 'prenom', 'date_naissance', 'lieu_naissance', 'sexe', 'email', 'niveau', 'departement']
-        colonnes_manquantes = [col for col in colonnes_requises if col not in headers]
-        
+        # Lire le fichier Excel ou CSV
+        lignes = lire_lignes_fichier(fichier)
+        if not lignes:
+            resultat['erreurs'].append('Le fichier est vide ou illisible.')
+            return resultat
+
+        raw_headers = lignes[0]
+        if not raw_headers or not any(str(c).strip() for c in raw_headers):
+            resultat['erreurs'].append('Ligne d en-tête invalide ou manquante.')
+            return resultat
+
+        header_map = {}
+        for index, raw_header in enumerate(raw_headers):
+            clé = normaliser_entete(raw_header)
+            if clé in HEADER_ALIASES:
+                champ = HEADER_ALIASES[clé]
+                if champ not in header_map:
+                    header_map[champ] = index
+
+        colonnes_requises = [
+            'matricule', 'nom', 'prenom', 'date_naissance',
+            'lieu_naissance', 'sexe', 'niveau', 'departement'
+        ]
+        colonnes_manquantes = [col for col in colonnes_requises if col not in header_map]
         if colonnes_manquantes:
             resultat['erreurs'].append(f"Colonnes manquantes : {', '.join(colonnes_manquantes)}")
             return resultat
-        
+
         # Traiter chaque ligne (à partir de la ligne 2)
-        for row_num, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        for row_num, row in enumerate(lignes[1:], start=2):
             try:
-                # Créer un dictionnaire ligne EN GÉRANT LES CELLULES VIDES
                 data = {}
-                for i, header in enumerate(headers):
-                    if i < len(row):
-                        # Convertir None en chaîne vide
-                        data[header] = row[i] if row[i] is not None else ''
-                    else:
-                        data[header] = ''
-                
+                for champ, index in header_map.items():
+                    data[champ] = row[index] if index < len(row) and row[index] is not None else ''
+
                 # Ignorer les lignes vides (matricule vide)
                 matricule = str(data.get('matricule', '')).strip()
                 if not matricule:
                     continue
-                
+
                 # VÉRIFICATION DÉPARTEMENT (si chef)
                 if departement_limite:
                     dept_code = str(data.get('departement', '')).strip().upper()
@@ -114,10 +194,10 @@ def traiter_fichier_excel(fichier, annee_academique, departement_limite=None):
                             'erreur': f"Département '{dept_code}' non autorisé. Vous ne pouvez importer que des étudiants {departement_limite.code}"
                         })
                         continue
-                
+
                 # Valider et créer l'étudiant
                 etudiant, created = creer_etudiant_depuis_ligne(data, annee_academique, row_num)
-                
+
                 if created:
                     resultat['succes'] += 1
                     resultat['details'].append({
@@ -135,7 +215,7 @@ def traiter_fichier_excel(fichier, annee_academique, departement_limite=None):
                         'departement': str(data.get('departement', '')).strip(),
                         'statut': 'Existant (ignoré)'
                     })
-            
+
             except Exception as e:
                 resultat['erreurs'].append({
                     'ligne': row_num,
@@ -180,16 +260,20 @@ def creer_etudiant_depuis_ligne(data, annee_academique, row_num):
         # Parser la date de naissance
         date_naissance = data['date_naissance']
         if isinstance(date_naissance, str):
-            # Format attendu : DD/MM/YYYY ou DD-MM-YYYY
-            try:
-                date_naissance = datetime.strptime(date_naissance, '%d/%m/%Y').date()
-            except:
+            for fmt in ('%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d', '%Y/%m/%d'):
                 try:
-                    date_naissance = datetime.strptime(date_naissance, '%d-%m-%Y').date()
-                except:
-                    raise ValueError(f"Format de date invalide : {date_naissance}. Utilisez JJ/MM/AAAA")
+                    date_naissance = datetime.strptime(date_naissance, fmt).date()
+                    break
+                except Exception:
+                    continue
+            else:
+                raise ValueError(f"Format de date invalide : {date_naissance}. Utilisez JJ/MM/AAAA ou AAAA-MM-JJ")
         elif isinstance(date_naissance, datetime):
             date_naissance = date_naissance.date()
+        elif isinstance(date_naissance, date):
+            pass
+        else:
+            raise ValueError(f"Format de date invalide : {date_naissance}. Utilisez JJ/MM/AAAA ou AAAA-MM-JJ")
         
         # Valider le sexe
         sexe = str(data['sexe']).strip().upper()
@@ -229,6 +313,7 @@ def creer_etudiant_depuis_ligne(data, annee_academique, row_num):
                 sexe=sexe,
                 email=email,
                 telephone=data.get('telephone', '').strip(),
+                adresse=data.get('adresse', '').strip(),
                 departement=departement,
                 niveau=niveau,
                 annee_academique=annee_academique,
@@ -284,7 +369,7 @@ def telecharger_modele_excel(request):
     # En-têtes
     headers = [
         'matricule', 'nom', 'prenom', 'date_naissance', 'lieu_naissance',
-        'sexe', 'email', 'telephone', 'niveau', 'departement'
+        'sexe', 'email', 'telephone', 'adresse', 'niveau', 'departement'
     ]
     
     # Style pour l'en-tête
@@ -305,16 +390,16 @@ def telecharger_modele_excel(request):
         # Chef : exemples de son département uniquement
         dept_code = request.user.profile.departement.code
         exemples = [
-            [f'{111 if dept_code == "NTIC" else 444}-001-234-567', 'Diallo', 'Mamadou', '15/03/2005', 'Conakry', 'M', 'diallo@student.uganc.edu.gn', '+224 123 456 789', 'L1', dept_code],
-            [f'{111 if dept_code == "NTIC" else 444}-002-345-678', 'Bah', 'Fatoumata', '20/06/2005', 'Labé', 'F', 'bah@student.uganc.edu.gn', '+224 987 654 321', 'L1', dept_code],
+            [f'{111 if dept_code == "NTIC" else 444}-001-234-567', 'Diallo', 'Mamadou', '15/03/2005', 'Conakry', 'M', 'diallo@student.uganc.edu.gn', '+224 123 456 789', 'Conakry', 'L1', dept_code],
+            [f'{111 if dept_code == "NTIC" else 444}-002-345-678', 'Bah', 'Fatoumata', '20/06/2005', 'Labé', 'F', 'bah@student.uganc.edu.gn', '+224 987 654 321', 'Labé', 'L1', dept_code],
         ]
     else:
         # Admin : exemples des 2 départements
         exemples = [
-            ['111-001-234-567', 'Diallo', 'Mamadou', '15/03/2005', 'Conakry', 'M', 'diallo@student.uganc.edu.gn', '+224 123 456 789', 'L1', 'NTIC'],
-            ['444-002-345-678', 'Bah', 'Fatoumata', '20/06/2005', 'Labé', 'F', 'bah@student.uganc.edu.gn', '+224 987 654 321', 'L1', 'DL'],
+            ['111-001-234-567', 'Diallo', 'Mamadou', '15/03/2005', 'Conakry', 'M', 'diallo@student.uganc.edu.gn', '+224 123 456 789', 'Conakry', 'L1', 'NTIC'],
+            ['444-002-345-678', 'Bah', 'Fatoumata', '20/06/2005', 'Labé', 'F', 'bah@student.uganc.edu.gn', '+224 987 654 321', 'Labé', 'L1', 'DL'],
         ]
-    
+
     for row_num, exemple in enumerate(exemples, 2):
         for col_num, valeur in enumerate(exemple, 1):
             ws.cell(row=row_num, column=col_num, value=valeur)

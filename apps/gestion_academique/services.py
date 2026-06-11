@@ -1,6 +1,7 @@
-# gestion_academique/services.py
+# gestion_academique/services.py - VERSION MODIFIÉE
 """
 Services pour la gestion du passage d'année et de l'archivage
+MODIFIÉ : Ajout règle des 4 dettes max + passage manuel
 """
 from django.db import transaction
 from django.utils import timezone
@@ -14,27 +15,49 @@ import json
 class PassageAnneeService:
     """
     Service pour gérer le passage automatique d'une année à l'autre
-    RÈGLE: Tous les étudiants passent automatiquement (pas de redoublement)
+    NOUVELLE RÈGLE: Maximum 3 dettes (UE non validées) pour passer
     """
     
     @staticmethod
     def passage_automatique_annee(ancienne_annee, nouvelle_annee):
         """
-        Effectue le passage automatique de tous les étudiants vers l'année suivante
+        Effectue le passage des étudiants vers l'année suivante
+        avec vérification de la règle des 4 dettes max
+        
+        RÈGLE:
+        - 0 à 3 UE non validées → Passe au niveau supérieur
+        - 4 UE non validées ou plus → Redouble
+        - Passage manuel → Passe automatiquement (ignore dettes)
         
         Args:
             ancienne_annee: AnneeAcademique qui se termine
             nouvelle_annee: AnneeAcademique qui commence
             
         Returns:
-            dict: Statistiques du passage (nb étudiants passés, archivés, etc.)
+            dict: Statistiques détaillées du passage
         """
         stats = {
+            # Passages normaux
             'l1_vers_l2': 0,
             'l2_vers_l3': 0,
+            
+            # Redoublements (nouveauté)
+            'l1_redouble': 0,
+            'l2_redouble': 0,
+            
+            # Passages manuels
+            'l1_vers_l2_manuel': 0,
+            'l2_vers_l3_manuel': 0,
+            
+            # L3 archivés
             'l3_archives': 0,
             'l3_diplomes': 0,
             'l3_non_diplomes': 0,
+            
+            # Détails des redoublements
+            'redoublants_detail': [],
+            
+            # Erreurs
             'erreurs': []
         }
         
@@ -52,17 +75,54 @@ class PassageAnneeService:
                         niveau_actuel_ordre = etudiant.niveau.ordre
                         
                         if niveau_actuel_ordre < 3:
-                            # L1 → L2 ou L2 → L3
-                            niveau_suivant = Niveau.objects.get(ordre=niveau_actuel_ordre + 1)
+                            # L1 ou L2 → Vérifier les dettes
                             
-                            etudiant.niveau = niveau_suivant
-                            etudiant.annee_academique = nouvelle_annee
-                            etudiant.save()
+                            # Vérifier si l'étudiant peut passer
+                            peut_passer, raison = etudiant.peut_passer_niveau_superieur()
                             
-                            if niveau_actuel_ordre == 1:
-                                stats['l1_vers_l2'] += 1
+                            if peut_passer:
+                                # ✅ PASSAGE AU NIVEAU SUPÉRIEUR
+                                niveau_suivant = Niveau.objects.get(ordre=niveau_actuel_ordre + 1)
+                                
+                                etudiant.niveau = niveau_suivant
+                                etudiant.annee_academique = nouvelle_annee
+                                etudiant.save()
+                                
+                                # Comptabiliser
+                                if niveau_actuel_ordre == 1:
+                                    if etudiant.passage_manuel:
+                                        stats['l1_vers_l2_manuel'] += 1
+                                    else:
+                                        stats['l1_vers_l2'] += 1
+                                else:
+                                    if etudiant.passage_manuel:
+                                        stats['l2_vers_l3_manuel'] += 1
+                                    else:
+                                        stats['l2_vers_l3'] += 1
+                            
                             else:
-                                stats['l2_vers_l3'] += 1
+                                # ❌ REDOUBLEMENT
+                                # L'étudiant reste au même niveau mais change d'année
+                                
+                                etudiant.annee_academique = nouvelle_annee
+                                # Le niveau reste le même (pas de changement)
+                                etudiant.save()
+                                
+                                # Comptabiliser
+                                if niveau_actuel_ordre == 1:
+                                    stats['l1_redouble'] += 1
+                                else:
+                                    stats['l2_redouble'] += 1
+                                
+                                # Enregistrer les détails
+                                nb_dettes = etudiant.compter_ues_non_validees()
+                                stats['redoublants_detail'].append({
+                                    'matricule': etudiant.matricule,
+                                    'nom': etudiant.get_full_name(),
+                                    'niveau': etudiant.niveau.code,
+                                    'nb_dettes': nb_dettes,
+                                    'raison': raison
+                                })
                         
                         else:
                             # L3 → Archivage
@@ -98,6 +158,81 @@ class PassageAnneeService:
             })
         
         return stats
+    
+    
+    @staticmethod
+    def passage_manuel_etudiant(etudiant, user_direction, justification=""):
+        """
+        Force le passage manuel d'un étudiant au niveau supérieur
+        (ignore la règle des 4 dettes)
+        
+        PERMISSION: Réservé à la direction uniquement
+        
+        Args:
+            etudiant: Etudiant à faire passer
+            user_direction: User de la direction qui effectue le passage
+            justification: Raison du passage manuel
+            
+        Returns:
+            dict: Résultat de l'opération
+        """
+        try:
+            # Vérifier que l'étudiant n'est pas déjà au dernier niveau
+            if etudiant.niveau.ordre >= 3:
+                return {
+                    'success': False,
+                    'message': "Impossible : l'étudiant est déjà en L3"
+                }
+            
+            # Récupérer l'année active
+            try:
+                annee_active = AnneeAcademique.objects.get(est_active=True)
+            except AnneeAcademique.DoesNotExist:
+                return {
+                    'success': False,
+                    'message': "Aucune année académique active"
+                }
+            
+            # Vérifier que l'étudiant est dans l'année active
+            if etudiant.annee_academique != annee_active:
+                return {
+                    'success': False,
+                    'message': f"L'étudiant n'est pas dans l'année active ({etudiant.annee_academique.annee})"
+                }
+            
+            # Récupérer le niveau suivant
+            niveau_suivant = Niveau.objects.get(ordre=etudiant.niveau.ordre + 1)
+            
+            # Compter les dettes avant passage
+            nb_dettes = etudiant.compter_ues_non_validees()
+            
+            # Effectuer le passage
+            ancien_niveau = etudiant.niveau.code
+            
+            etudiant.niveau = niveau_suivant
+            etudiant.passage_manuel = True
+            etudiant.passage_manuel_par = user_direction
+            etudiant.passage_manuel_date = timezone.now()
+            etudiant.passage_manuel_justification = justification or f"Passage manuel malgré {nb_dettes} dettes"
+            etudiant.save()
+            
+            return {
+                'success': True,
+                'message': f"✅ Passage manuel effectué : {ancien_niveau} → {niveau_suivant.code}",
+                'details': {
+                    'ancien_niveau': ancien_niveau,
+                    'nouveau_niveau': niveau_suivant.code,
+                    'nb_dettes': nb_dettes,
+                    'date': etudiant.passage_manuel_date,
+                    'par': user_direction.get_full_name()
+                }
+            }
+            
+        except Exception as e:
+            return {
+                'success': False,
+                'message': f"Erreur lors du passage manuel : {str(e)}"
+            }
 
 
 class ArchivageService:

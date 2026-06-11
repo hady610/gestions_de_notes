@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Historique des Passages Manuels{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>📋 Historique des Passages Manuels</h2>
+                <div>
+                    <a href="{% url 'gestion_academique:passage_manuel_liste' %}" class="btn btn-warning me-2">
+                        🔓 Passage Manuel
+                    </a>
+                    <a href="{% url 'gestion_academique:annee_list' %}" class="btn btn-secondary">
+                        ← Retour
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Statistiques -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Total passages manuels</h5>
+                            <h2 class="mb-0">{{ stats.total }}</h2>
+                            <small>Tous niveaux confondus</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Par niveau</h5>
+                            <div class="d-flex justify-content-around mt-2">
+                                {% for item in stats.par_niveau %}
+                                <div class="text-center">
+                                    <h4 class="mb-0">{{ item.total }}</h4>
+                                    <small>{{ item.niveau__code }}</small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h5 class="card-title">Par département</h5>
+                            <div class="d-flex justify-content-around mt-2">
+                                {% for item in stats.par_departement %}
+                                <div class="text-center">
+                                    <h4 class="mb-0">{{ item.total }}</h4>
+                                    <small>{{ item.departement__code }}</small>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filtres -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">🔍 Filtres</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">Recherche</label>
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="Matricule, nom, prénom..." 
+                                   value="{{ filters.search }}">
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label class="form-label">Département</label>
+                            <select name="departement" class="form-select">
+                                <option value="">Tous</option>
+                                {% for dept in departements %}
+                                <option value="{{ dept.id }}" {% if filters.departement == dept.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ dept.code }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2">
+                            <label class="form-label">Niveau</label>
+                            <select name="niveau" class="form-select">
+                                <option value="">Tous</option>
+                                {% for niv in niveaux %}
+                                <option value="{{ niv.id }}" {% if filters.niveau == niv.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ niv.code }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label class="form-label">Année académique</label>
+                            <select name="annee" class="form-select">
+                                <option value="">Toutes</option>
+                                {% for annee in annees %}
+                                <option value="{{ annee.id }}" {% if filters.annee == annee.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ annee.annee }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                Filtrer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Liste -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">📜 Liste complète ({{ stats.total }} passage{{ stats.total|pluralize }})</h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if etudiants %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Étudiant</th>
+                                    <th>Matricule</th>
+                                    <th>Dept.</th>
+                                    <th>Niveau</th>
+                                    <th>Année</th>
+                                    <th>Effectué par</th>
+                                    <th>Justification</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for etudiant in etudiants %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ etudiant.passage_manuel_date|date:"d/m/Y" }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ etudiant.passage_manuel_date|date:"H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <strong>{{ etudiant.get_full_name }}</strong>
+                                    </td>
+                                    <td>
+                                        <code>{{ etudiant.matricule }}</code>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ etudiant.departement.code }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ etudiant.niveau.code }}</span>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ etudiant.annee_academique.annee }}</small>
+                                    </td>
+                                    <td>
+                                        <small>{{ etudiant.passage_manuel_par.get_full_name }}</small>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-outline-info" 
+                                                onclick="openJustificationModal{{ etudiant.id }}()">
+                                            <i class="bi bi-eye"></i> Voir
+                                        </button>
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-warning" 
+                                                onclick="openAnnulerModal{{ etudiant.id }}()">
+                                            ↩️ Annuler
+                                        </button>
+                                    </td>
+                                </tr>
+                                
+                                <script>
+                                function openJustificationModal{{ etudiant.id }}() {
+                                    var myModal = new bootstrap.Modal(document.getElementById('justifModal{{ etudiant.id }}'));
+                                    myModal.show();
+                                }
+                                function openAnnulerModal{{ etudiant.id }}() {
+                                    var myModal = new bootstrap.Modal(document.getElementById('annulerModal{{ etudiant.id }}'));
+                                    myModal.show();
+                                }
+                                </script>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info m-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Aucun passage manuel trouvé avec ces critères.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODALS Justifications -->
+{% for etudiant in etudiants %}
+<!-- Modal Justification -->
+<div class="modal fade" id="justifModal{{ etudiant.id }}" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title">📝 Justification du passage manuel</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Étudiant :</strong></p>
+                        <p class="text-muted">{{ etudiant.get_full_name }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Matricule :</strong></p>
+                        <p class="text-muted">{{ etudiant.matricule }}</p>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <p class="mb-1"><strong>Département :</strong></p>
+                        <p class="text-muted">{{ etudiant.departement.nom }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1"><strong>Niveau actuel :</strong></p>
+                        <p class="text-muted">{{ etudiant.niveau.nom }}</p>
+                    </div>
+                    <div class="col-md-4">
+                        <p class="mb-1"><strong>Année :</strong></p>
+                        <p class="text-muted">{{ etudiant.annee_academique.annee }}</p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Date du passage :</strong></p>
+                        <p class="text-muted">{{ etudiant.passage_manuel_date|date:"d/m/Y à H:i" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-1"><strong>Effectué par :</strong></p>
+                        <p class="text-muted">{{ etudiant.passage_manuel_par.get_full_name }}</p>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <p class="mb-2"><strong>Justification :</strong></p>
+                    <div class="alert alert-light border">
+                        <p class="mb-0" style="white-space: pre-wrap;">{{ etudiant.passage_manuel_justification }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Annulation -->
+<div class="modal fade" id="annulerModal{{ etudiant.id }}" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">⚠️ Annuler le passage manuel</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p><strong>Étudiant :</strong> {{ etudiant.get_full_name }}</p>
+                <p><strong>Matricule :</strong> {{ etudiant.matricule }}</p>
+                <p><strong>Niveau actuel :</strong> {{ etudiant.niveau.code }}</p>
+                <hr>
+                <p class="text-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    L'étudiant sera remis à son niveau précédent.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="post" action="{% url 'gestion_academique:passage_manuel_annuler' etudiant.id %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-warning">
+                        Confirmer l'annulation
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}

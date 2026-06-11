@@ -9,7 +9,7 @@ from django.db.models import Q, Count
 from django.utils import timezone
 from datetime import datetime
 
-from .models import AnneeAcademique, Etudiant, EtudiantArchive, Departement
+from .models import AnneeAcademique, Etudiant, EtudiantArchive, Departement, Niveau
 from .services import PassageAnneeService, ArchivageService
 from .forms import AnneeAcademiqueForm
 
@@ -184,6 +184,7 @@ def passage_annee_form(request):
 def passage_annee_executer(request):
     """
     Exécute le passage automatique d'année
+    MODIFIÉ : Affiche maintenant les statistiques de redoublement
     """
     if not (request.user.profile.is_admin() or request.user.profile.is_direction()):
         messages.error(request, "Accès refusé !")
@@ -210,7 +211,7 @@ def passage_annee_executer(request):
     # Exécuter le passage
     stats = PassageAnneeService.passage_automatique_annee(ancienne_annee, nouvelle_annee)
     
-    # Afficher les résultats
+    # Afficher les résultats - VERSION AMÉLIORÉE
     if stats['erreurs']:
         messages.warning(request, 
             f"Passage effectué avec {len(stats['erreurs'])} erreur(s).")
@@ -220,10 +221,27 @@ def passage_annee_executer(request):
         messages.success(request, 
             f"✅ Passage d'année réussi vers {nouvelle_annee.annee} !")
     
+    # ⭐ NOUVEAU : Messages détaillés avec redoublements
     messages.info(request, 
-        f"L1→L2: {stats['l1_vers_l2']} | "
-        f"L2→L3: {stats['l2_vers_l3']} | "
-        f"L3 archivés: {stats['l3_archives']} "
+        f"📊 Passages : L1→L2: {stats['l1_vers_l2']} | L2→L3: {stats['l2_vers_l3']}")
+    
+    # Afficher les passages manuels s'il y en a
+    total_manuels = stats['l1_vers_l2_manuel'] + stats['l2_vers_l3_manuel']
+    if total_manuels > 0:
+        messages.success(request, 
+            f"🔓 Passages manuels : {total_manuels} (L1→L2: {stats['l1_vers_l2_manuel']}, L2→L3: {stats['l2_vers_l3_manuel']})")
+    
+    # ⭐ NOUVEAU : Afficher les redoublements
+    total_redoublants = stats['l1_redouble'] + stats['l2_redouble']
+    if total_redoublants > 0:
+        messages.warning(request, 
+            f"⚠️ Redoublements : {total_redoublants} étudiants (L1: {stats['l1_redouble']}, L2: {stats['l2_redouble']})")
+        messages.info(request, 
+            f"💡 Vous pouvez gérer les passages manuels depuis le menu 'Passage Manuel'")
+    
+    # Afficher les archives L3
+    messages.info(request, 
+        f"📁 L3 archivés: {stats['l3_archives']} "
         f"(Diplômés: {stats['l3_diplomes']}, Non diplômés: {stats['l3_non_diplomes']})")
     
     return redirect('gestion_academique:annee_list')
@@ -373,3 +391,258 @@ def archives_verifier_maj(request):
         f"{resultat['verifies']} archive(s) vérifiée(s).")
     
     return redirect('gestion_academique:archives_list')
+
+
+# ==================== PASSAGE MANUEL ====================
+
+@login_required
+def passage_manuel_liste(request):
+    """
+    Liste des étudiants éligibles au passage manuel
+    Affiche les étudiants qui ont 4 dettes ou plus et qui pourraient être passés manuellement
+    
+    PERMISSION: Direction uniquement
+    """
+    if not request.user.profile.is_direction():
+        messages.error(request, "Accès refusé ! Réservé à la direction.")
+        return redirect('home')
+    
+    # Récupérer l'année active
+    try:
+        annee_active = AnneeAcademique.objects.get(est_active=True)
+    except AnneeAcademique.DoesNotExist:
+        messages.error(request, "Aucune année académique active !")
+        return redirect('gestion_academique:annee_list')
+    
+    # Récupérer tous les étudiants actifs (L1 et L2 uniquement)
+    etudiants = Etudiant.objects.filter(
+        annee_academique=annee_active,
+        statut='actif',
+        niveau__ordre__lt=3  # Uniquement L1 et L2
+    ).select_related('niveau', 'departement')
+    
+    # Calculer les dettes pour chaque étudiant
+    etudiants_avec_dettes = []
+    
+    for etudiant in etudiants:
+        nb_dettes = etudiant.compter_ues_non_validees()
+        peut_passer, raison = etudiant.peut_passer_niveau_superieur()
+        
+        etudiants_avec_dettes.append({
+            'etudiant': etudiant,
+            'nb_dettes': nb_dettes,
+            'peut_passer': peut_passer,
+            'raison': raison,
+            'doit_redoubler': nb_dettes >= 4 and not etudiant.passage_manuel
+        })
+    
+    # Filtres
+    departement_id = request.GET.get('departement', '')
+    niveau_id = request.GET.get('niveau', '')
+    afficher_tous = request.GET.get('tous', '') == 'oui'
+    
+    if departement_id:
+        etudiants_avec_dettes = [
+            e for e in etudiants_avec_dettes 
+            if str(e['etudiant'].departement.id) == departement_id
+        ]
+    
+    if niveau_id:
+        etudiants_avec_dettes = [
+            e for e in etudiants_avec_dettes 
+            if str(e['etudiant'].niveau.id) == niveau_id
+        ]
+    
+    # Par défaut, afficher seulement ceux qui doivent redoubler (4+ dettes)
+    if not afficher_tous:
+        etudiants_avec_dettes = [
+            e for e in etudiants_avec_dettes 
+            if e['doit_redoubler']
+        ]
+    
+    # Statistiques
+    stats = {
+        'total': len(etudiants_avec_dettes),
+        'passages_manuels_existants': Etudiant.objects.filter(
+            annee_academique=annee_active,
+            passage_manuel=True
+        ).count()
+    }
+    
+    # Données pour filtres
+    departements = Departement.objects.all()
+    niveaux = Niveau.objects.filter(ordre__lt=3)  # L1 et L2 uniquement
+    
+    context = {
+        'etudiants_avec_dettes': etudiants_avec_dettes,
+        'annee_active': annee_active,
+        'stats': stats,
+        'departements': departements,
+        'niveaux': niveaux,
+        'filters': {
+            'departement': departement_id,
+            'niveau': niveau_id,
+            'tous': afficher_tous
+        }
+    }
+    return render(request, 'gestion_academique/passage/manuel_liste.html', context)
+
+
+@login_required
+def passage_manuel_executer(request, etudiant_id):
+    """
+    Exécute le passage manuel d'un étudiant spécifique
+    
+    PERMISSION: Direction uniquement
+    """
+    if not request.user.profile.is_direction():
+        messages.error(request, "Accès refusé ! Réservé à la direction.")
+        return redirect('home')
+    
+    if request.method != 'POST':
+        return redirect('gestion_academique:passage_manuel_liste')
+    
+    etudiant = get_object_or_404(Etudiant, pk=etudiant_id)
+    justification = request.POST.get('justification', '').strip()
+    
+    # Vérifier que la justification est fournie
+    if not justification:
+        messages.error(request, "La justification est obligatoire pour un passage manuel !")
+        return redirect('gestion_academique:passage_manuel_liste')
+    
+    # Effectuer le passage
+    resultat = PassageAnneeService.passage_manuel_etudiant(
+        etudiant=etudiant,
+        user_direction=request.user,
+        justification=justification
+    )
+    
+    if resultat['success']:
+        messages.success(request, resultat['message'])
+        messages.info(request, 
+            f"Détails : {resultat['details']['nb_dettes']} dettes | "
+            f"{resultat['details']['ancien_niveau']} → {resultat['details']['nouveau_niveau']}")
+    else:
+        messages.error(request, resultat['message'])
+    
+    return redirect('gestion_academique:passage_manuel_liste')
+
+
+@login_required
+def passage_manuel_annuler(request, etudiant_id):
+    """
+    Annule le passage manuel d'un étudiant
+    (le remet au niveau précédent)
+    
+    PERMISSION: Direction uniquement
+    """
+    if not request.user.profile.is_direction():
+        messages.error(request, "Accès refusé ! Réservé à la direction.")
+        return redirect('home')
+    
+    if request.method != 'POST':
+        return redirect('gestion_academique:passage_manuel_liste')
+    
+    etudiant = get_object_or_404(Etudiant, pk=etudiant_id)
+    
+    # Vérifier que c'est bien un passage manuel
+    if not etudiant.passage_manuel:
+        messages.error(request, "Cet étudiant n'a pas fait l'objet d'un passage manuel !")
+        return redirect('gestion_academique:passage_manuel_liste')
+    
+    try:
+        # Récupérer le niveau précédent
+        niveau_precedent = Niveau.objects.get(ordre=etudiant.niveau.ordre - 1)
+        
+        ancien_niveau = etudiant.niveau.code
+        
+        # Annuler le passage
+        etudiant.niveau = niveau_precedent
+        etudiant.passage_manuel = False
+        etudiant.passage_manuel_par = None
+        etudiant.passage_manuel_date = None
+        etudiant.passage_manuel_justification = ""
+        etudiant.save()
+        
+        messages.success(request, 
+            f"✅ Passage manuel annulé : {ancien_niveau} → {niveau_precedent.code}")
+        
+    except Exception as e:
+        messages.error(request, f"Erreur lors de l'annulation : {str(e)}")
+    
+    return redirect('gestion_academique:passage_manuel_liste')
+
+
+# AJOUTER CETTE VUE dans apps/gestion_academique/views_annee.py
+# (après la fonction passage_manuel_annuler)
+
+@login_required
+def passage_manuel_historique(request):
+    """
+    Historique de tous les passages manuels effectués
+    
+    PERMISSION: Direction uniquement
+    """
+    if not request.user.profile.is_direction():
+        messages.error(request, "Accès refusé ! Réservé à la direction.")
+        return redirect('home')
+    
+    # Récupérer tous les étudiants avec passage manuel
+    etudiants = Etudiant.objects.filter(
+        passage_manuel=True
+    ).select_related(
+        'niveau', 'departement', 'annee_academique', 'passage_manuel_par'
+    ).order_by('-passage_manuel_date')
+    
+    # Filtres
+    departement_id = request.GET.get('departement', '')
+    annee_id = request.GET.get('annee', '')
+    niveau_id = request.GET.get('niveau', '')
+    search = request.GET.get('search', '')
+    
+    if departement_id:
+        etudiants = etudiants.filter(departement_id=departement_id)
+    
+    if annee_id:
+        etudiants = etudiants.filter(annee_academique_id=annee_id)
+    
+    if niveau_id:
+        etudiants = etudiants.filter(niveau_id=niveau_id)
+    
+    if search:
+        etudiants = etudiants.filter(
+            Q(matricule__icontains=search) |
+            Q(nom__icontains=search) |
+            Q(prenom__icontains=search)
+        )
+    
+    # Statistiques
+    stats = {
+        'total': etudiants.count(),
+        'par_niveau': etudiants.values('niveau__code').annotate(
+            total=Count('id')
+        ).order_by('niveau__code'),
+        'par_departement': etudiants.values('departement__code').annotate(
+            total=Count('id')
+        ).order_by('departement__code'),
+    }
+    
+    # Données pour filtres
+    departements = Departement.objects.all()
+    annees = AnneeAcademique.objects.all().order_by('-date_debut')
+    niveaux = Niveau.objects.all().order_by('ordre')
+    
+    context = {
+        'etudiants': etudiants,
+        'stats': stats,
+        'departements': departements,
+        'annees': annees,
+        'niveaux': niveaux,
+        'filters': {
+            'departement': departement_id,
+            'annee': annee_id,
+            'niveau': niveau_id,
+            'search': search,
+        }
+    }
+    return render(request, 'gestion_academique/passage/historique.html', context)

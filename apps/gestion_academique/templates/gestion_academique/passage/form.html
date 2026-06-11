@@ -1,120 +1,159 @@
 {% extends 'gestion_academique/base_admin.html' %}
-{% load static %}
-
-{% block title %}Passage d'Année Automatique - UGANC{% endblock %}
+{% block title %}Passage d'Année Automatique{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-lg-10 mx-auto">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1 class="h2 text-primary-custom fw-bold">
-                <i class="bi bi-arrow-repeat me-2"></i>Passage d'Année Automatique
-            </h1>
-            <a href="{% url 'gestion_academique:annee_list' %}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-2"></i>Retour
-            </a>
-        </div>
-
-        <!-- Info année courante -->
-        <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-                <i class="bi bi-info-circle me-2"></i>Année Académique Courante
-            </div>
-            <div class="card-body">
-                <h4 class="text-primary-custom">{{ annee_active.annee }}</h4>
-                <p class="text-muted mb-0">
-                    Du {{ annee_active.date_debut|date:"d/m/Y" }} au {{ annee_active.date_fin|date:"d/m/Y" }}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">🎓 Passage d'Année Automatique</h2>
+            
+            <!-- ⭐ NOUVEAU : Alerte règle de passage -->
+            <div class="alert alert-info" role="alert">
+                <h5 class="alert-heading">📋 Nouvelle règle de passage</h5>
+                <p class="mb-2"><strong>Les étudiants passent automatiquement au niveau supérieur SI :</strong></p>
+                <ul class="mb-2">
+                    <li>✅ Ils ont <strong>moins de 4 UE non validées</strong> (0 à 3 dettes)</li>
+                    <li>🔓 OU ils ont fait l'objet d'un <strong>passage manuel par la direction</strong></li>
+                </ul>
+                <p class="mb-0"><strong>Sinon :</strong></p>
+                <ul class="mb-0">
+                    <li>❌ Ils <strong>redoublent</strong> (restent au même niveau)</li>
+                </ul>
+                <hr>
+                <p class="mb-0">
+                    <small>
+                        💡 <strong>Astuce :</strong> Après le passage automatique, vous pourrez utiliser la fonction 
+                        <a href="{% url 'gestion_academique:passage_manuel_liste' %}" class="alert-link">
+                            <strong>Passage Manuel</strong>
+                        </a> pour faire passer manuellement des étudiants spécifiques qui auraient 4 dettes ou plus.
+                    </small>
                 </p>
             </div>
-        </div>
 
-        <!-- Statistiques étudiants -->
-        <div class="row mb-4">
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-1-circle-fill" style="font-size: 3rem; color: #0d6efd;"></i>
-                        <h3 class="stat-value mt-2">{{ stats.l1 }}</h3>
-                        <p class="text-muted mb-0">Étudiants L1</p>
-                        <small class="text-success">→ Passeront en L2</small>
+            <!-- Année active -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">📅 Année académique active</h5>
+                </div>
+                <div class="card-body">
+                    <h4>{{ annee_active.annee }}</h4>
+                    <p class="mb-2">
+                        <strong>Dates :</strong> 
+                        {{ annee_active.date_debut|date:"d/m/Y" }} → {{ annee_active.date_fin|date:"d/m/Y" }}
+                    </p>
+                    {% if annee_active.passage_effectue %}
+                    <div class="alert alert-warning mb-0">
+                        ⚠️ Le passage d'année a déjà été effectué le {{ annee_active.date_passage|date:"d/m/Y à H:i" }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Statistiques année actuelle -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">📊 Statistiques de l'année actuelle</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h6>L1</h6>
+                                    <h2>{{ stats.l1 }}</h2>
+                                    <small>étudiants actifs</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h6>L2</h6>
+                                    <h2>{{ stats.l2 }}</h2>
+                                    <small>étudiants actifs</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h6>L3</h6>
+                                    <h2>{{ stats.l3 }}</h2>
+                                    <small>étudiants actifs</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-dark text-white">
+                                <div class="card-body text-center">
+                                    <h6>TOTAL</h6>
+                                    <h2>{{ stats.total }}</h2>
+                                    <small>étudiants actifs</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-2-circle-fill" style="font-size: 3rem; color: #198754;"></i>
-                        <h3 class="stat-value mt-2">{{ stats.l2 }}</h3>
-                        <p class="text-muted mb-0">Étudiants L2</p>
-                        <small class="text-success">→ Passeront en L3</small>
-                    </div>
+
+            <!-- Formulaire de passage -->
+            {% if not annee_active.passage_effectue %}
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">🚀 Lancer le passage d'année</h5>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card text-center">
-                    <div class="card-body">
-                        <i class="bi bi-3-circle-fill" style="font-size: 3rem; color: #ffc107;"></i>
-                        <h3 class="stat-value mt-2">{{ stats.l3 }}</h3>
-                        <p class="text-muted mb-0">Étudiants L3</p>
-                        <small class="text-warning">→ Seront archivés</small>
-                    </div>
-                </div>
-            </div>
-        </div>
+                <div class="card-body">
+                    {% if annees_candidates %}
+                    <form method="post" action="{% url 'gestion_academique:passage_annee_executer' %}">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label">
+                                <strong>Sélectionnez la nouvelle année académique :</strong>
+                            </label>
+                            <select name="nouvelle_annee_id" class="form-select" required>
+                                <option value="">-- Choisir --</option>
+                                {% for annee in annees_candidates %}
+                                <option value="{{ annee.id }}">
+                                    {{ annee.annee }} ({{ annee.date_debut|date:"d/m/Y" }} → {{ annee.date_fin|date:"d/m/Y" }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
 
-        <div class="alert alert-success">
-            <i class="bi bi-check-circle me-2"></i>
-            <strong>Total :</strong> {{ stats.total }} étudiant(s) seront traités automatiquement
-        </div>
+                        <div class="alert alert-warning">
+                            <strong>⚠️ Attention :</strong>
+                            <ul class="mb-0">
+                                <li>Cette opération fera passer automatiquement tous les étudiants ayant <strong>moins de 4 dettes</strong></li>
+                                <li>Les étudiants avec <strong>4 dettes ou plus</strong> redoubleront automatiquement</li>
+                                <li>Les étudiants L3 seront archivés (diplômés ou non selon validation UE)</li>
+                                <li>L'année {{ annee_active.annee }} sera désactivée</li>
+                                <li>Cette action <strong>ne peut pas être annulée</strong></li>
+                            </ul>
+                        </div>
 
-        <!-- Formulaire -->
-        <div class="card">
-            <div class="card-header bg-success text-white">
-                <i class="bi bi-arrow-right-circle me-2"></i>Sélectionner la Nouvelle Année
-            </div>
-            <div class="card-body">
-                <form method="post" action="{% url 'gestion_academique:passage_annee_executer' %}">
-                    {% csrf_token %}
-                    
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Nouvelle année académique cible *</label>
-                        <select name="nouvelle_annee_id" class="form-select form-select-lg" required>
-                            <option value="">-- Sélectionner l'année cible --</option>
-                            {% for annee in annees_candidates %}
-                            <option value="{{ annee.pk }}">{{ annee.annee }}</option>
-                            {% endfor %}
-                        </select>
-                        <small class="text-muted">
-                            Sélectionnez l'année vers laquelle vous souhaitez faire passer les étudiants
-                        </small>
-                    </div>
-
-                    <!-- Avertissements -->
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                ✅ Confirmer le passage d'année
+                            </button>
+                            <a href="{% url 'gestion_academique:annee_list' %}" class="btn btn-secondary btn-lg">
+                                Annuler
+                            </a>
+                        </div>
+                    </form>
+                    {% else %}
                     <div class="alert alert-warning">
-                        <h6 class="alert-heading">
-                            <i class="bi bi-exclamation-triangle me-2"></i>Attention - Points Importants
-                        </h6>
-                        <ul class="mb-0">
-                            <li><strong>TOUS les étudiants</strong> passeront automatiquement (pas de redoublement)</li>
-                            <li>Les étudiants L3 seront <strong>archivés</strong> avec statut diplômé/non diplômé</li>
-                            <li>L'année {{ annee_active.annee }} sera marquée comme "passage effectué"</li>
-                            <li>Cette opération est <strong>irréversible</strong></li>
-                        </ul>
+                        <p class="mb-0">
+                            Aucune nouvelle année académique disponible. 
+                            <a href="{% url 'gestion_academique:annee_create' %}" class="alert-link">
+                                Créer une nouvelle année académique
+                            </a>
+                        </p>
                     </div>
-
-                    <hr class="my-4">
-
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'gestion_academique:annee_list' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-x-circle me-2"></i>Annuler
-                        </a>
-                        <button type="submit" class="btn btn-success btn-lg" 
-                                onclick="return confirm('⚠️ CONFIRMATION REQUISE\n\nÊtes-vous sûr de vouloir lancer le passage d\'année ?\n\nCette opération va :\n- Faire passer tous les étudiants automatiquement\n- Archiver les étudiants de L3\n\nCette action est IRRÉVERSIBLE !')">
-                            <i class="bi bi-check-circle me-2"></i>Lancer le Passage d'Année
-                        </button>
-                    </div>
-                </form>
+                    {% endif %}
+                </div>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>
